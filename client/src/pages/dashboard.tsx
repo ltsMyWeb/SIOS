@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Sparkles,
   Users,
+  UserCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -388,6 +389,19 @@ export default function Dashboard() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              className="rounded-xl border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary"
+              data-testid="button-teacher-portal"
+              asChild
+            >
+              <Link href="/teacher-crm">
+                <span className="inline-flex items-center gap-2">
+                  <UserCircle className="h-4 w-4" />
+                  Teacher Portal
+                </span>
+              </Link>
+            </Button>
             <Button
               variant="secondary"
               className="rounded-xl"

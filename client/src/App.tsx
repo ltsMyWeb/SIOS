@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "./pages/dashboard";
 import ClassView from "./pages/class";
 import StudentView from "./pages/student";
+import TeacherCRM from "./pages/teacher-crm";
 
 function Router() {
   return (
@@ -15,6 +16,7 @@ function Router() {
         <Redirect to="/dashboard" />
       </Route>
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/teacher-crm" component={TeacherCRM} />
       <Route path="/class/:classId" component={ClassView} />
       <Route path="/student/:studentId" component={StudentView} />
       <Route component={NotFound} />
