@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -346,7 +347,11 @@ export default function TeacherCRM() {
                     </TableCell>
                     <TableCell className="border-r p-0 text-center">
                       <input
-                        ref={el => inputRefs.current[index] = el}
+                        ref={(el) => {
+                          if (inputRefs.current) {
+                            inputRefs.current[index] = el;
+                          }
+                        }}
                         className={cn(
                           "w-full h-10 text-center outline-none font-black text-lg transition-all",
                           student.status === "P" && "bg-emerald-100 text-emerald-700",
