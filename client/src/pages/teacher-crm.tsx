@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import {
   ArrowLeft,
@@ -12,6 +12,9 @@ import {
   Lock,
   UserPlus,
   Check,
+  Terminal,
+  Activity,
+  Cpu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +55,13 @@ type StudentRecord = {
   section: string;
   status: "P" | "A" | "L" | "";
   note: string;
+};
+
+type LogEntry = {
+  id: string;
+  timestamp: string;
+  level: "INFO" | "WARN" | "SYS";
+  message: string;
 };
 
 const INITIAL_STUDENTS: StudentRecord[] = [
@@ -69,6 +80,10 @@ export default function TeacherCRM() {
   const [search, setSearch] = useState("");
   const [activeRow, setActiveRow] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  
+  // System Dashboard State
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Add Student State
   const [newName, setNewName] = useState("");
@@ -76,6 +91,30 @@ export default function TeacherCRM() {
   const [newClass, setNewClass] = useState("");
   const [newSection, setNewSection] = useState("");
   const [isAddOpen, setIsAddOpen] = useState(false);
+
+  // Auto-generate logs
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const messages = [
+      "SIOS_NODE_STABLE :: Memory 12% usage",
+      "REGISTRY_SYNC_ACTIVE :: Waiting for commit",
+      "KEYBOARD_LISTENER_INIT :: Latency 2ms",
+      "AUTH_TOKEN_VERIFIED :: TTL 3600s",
+      "DASHBOARD_HEARTBEAT :: 200 OK",
+    ];
+    
+    const interval = setInterval(() => {
+      const newLog: LogEntry = {
+        id: Math.random().toString(),
+        timestamp: new Date().toLocaleTimeString(),
+        level: Math.random() > 0.8 ? "SYS" : "INFO",
+        message: messages[Math.floor(Math.random() * messages.length)],
+      };
+      setLogs(prev => [newLog, ...prev].slice(0, 50));
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, [isLoggedIn]);
 
   const filteredStudents = useMemo(() => {
     return students.filter(s => 
@@ -95,7 +134,50 @@ export default function TeacherCRM() {
   };
 
   const updateStatus = (id: string, status: StudentRecord["status"]) => {
-    setStudents(prev => prev.map(s => s.id === id ? { ...s, status } : s));
+    setStudents(prev => {
+      const newStudents = prev.map(s => s.id === id ? { ...s, status } : s);
+      const student = prev.find(s => s.id === id);
+      if (student) {
+        addLog(`STATUS_UPDATE :: ${student.name} -> ${status || 'NULL'}`);
+      }
+      return newStudents;
+    });
+  };
+
+  const addLog = (message: string, level: LogEntry["level"] = "INFO") => {
+    const newLog: LogEntry = {
+      id: Math.random().toString(),
+      timestamp: new Date().toLocaleTimeString(),
+      level,
+      message,
+    };
+    setLogs(prev => [newLog, ...prev].slice(0, 50));
+  };
+
+  const handleNoteChange = (id: string, note: string) => {
+    const lowerNote = note.toLowerCase();
+    let autoStatus: StudentRecord["status"] = "";
+    
+    if (lowerNote.includes("present") || lowerNote === "p") {
+      autoStatus = "P";
+    } else if (lowerNote.includes("absent") || lowerNote === "a") {
+      autoStatus = "A";
+    } else if (lowerNote.includes("late") || lowerNote === "l") {
+      autoStatus = "L";
+    }
+
+    setStudents(prev => prev.map(s => {
+      if (s.id === id) {
+        const newS = { ...s, note };
+        if (autoStatus) newS.status = autoStatus;
+        return newS;
+      }
+      return s;
+    }));
+    
+    if (autoStatus) {
+      addLog(`REACTIVE_LOGIC :: Keyword detection triggered [${autoStatus}]`, "SYS");
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent, index: number, id: string) => {
@@ -149,6 +231,7 @@ export default function TeacherCRM() {
     setNewRoll("");
     setNewClass("");
     setNewSection("");
+    addLog(`ENROLLMENT_SUCCESS :: ${newStudent.name} [Class ${newStudent.class}${newStudent.section}]`, "SYS");
     toast({ title: "Success", description: "Student added to registry." });
   };
 
@@ -191,8 +274,8 @@ export default function TeacherCRM() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-mono text-sm leading-tight">
-      <div className="border-b bg-slate-50 sticky top-0 z-10 px-4 py-2 flex items-center justify-between gap-4">
+    <div className="min-h-screen bg-white text-slate-900 font-mono text-sm leading-tight flex flex-col h-screen">
+      <div className="border-b bg-slate-50 px-4 py-2 flex items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-4">
           <Link href="/dashboard" className="flex items-center gap-1 font-bold text-slate-500 hover:text-slate-900">
             <ArrowLeft className="h-4 w-4" />
@@ -273,33 +356,73 @@ export default function TeacherCRM() {
             </DialogContent>
           </Dialog>
 
-          <Button size="sm" className="h-7 bg-blue-600 hover:bg-blue-700 rounded-none px-4 font-bold uppercase tracking-tight text-xs">
+          <Button size="sm" className="h-7 bg-blue-600 hover:bg-blue-700 rounded-none px-4 font-bold uppercase tracking-tight text-xs" onClick={() => addLog("MANUAL_SYNC_INIT :: Handshake...", "SYS")}>
             <Save className="h-3.5 w-3.5 mr-1.5" />
             Sync_Server
           </Button>
         </div>
       </div>
 
-      <div className="flex h-[calc(100vh-41px)]">
-        <div className="w-48 border-r bg-slate-50 flex flex-col p-2 gap-1 overflow-y-auto hidden md:flex">
-          <div className="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-widest">Navigation</div>
-          <Button variant="ghost" size="sm" className="justify-start rounded-none h-8 font-bold bg-white border border-slate-200 shadow-sm">
-            <Command className="h-3.5 w-3.5 mr-2 text-blue-600" />
-            REGISTRY
-          </Button>
-          <Button variant="ghost" size="sm" className="justify-start rounded-none h-8 font-bold text-slate-500">
-            <History className="h-3.5 w-3.5 mr-2" />
-            AUDIT_LOG
-          </Button>
-          <div className="mt-auto p-2 bg-blue-50 border border-blue-100 text-[10px] leading-relaxed">
-            <p className="font-bold text-blue-900 uppercase mb-1">Session Data</p>
-            <div className="flex justify-between"><span>Registry_Size:</span> <span className="font-bold">{students.length}</span></div>
-            <div className="flex justify-between"><span>Term_Status:</span> <span className="font-bold text-blue-600">LIVE</span></div>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Sidebar: Nav + Dashboard */}
+        <div className="w-64 border-r bg-slate-50 flex flex-col overflow-hidden hidden md:flex">
+          <div className="p-3 space-y-4 flex flex-col h-full">
+            <div className="space-y-1">
+              <div className="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-widest">Navigation</div>
+              <Button variant="ghost" size="sm" className="w-full justify-start rounded-none h-8 font-bold bg-white border border-slate-200 shadow-sm">
+                <Command className="h-3.5 w-3.5 mr-2 text-blue-600" />
+                REGISTRY
+              </Button>
+              <Button variant="ghost" size="sm" className="w-full justify-start rounded-none h-8 font-bold text-slate-500">
+                <History className="h-3.5 w-3.5 mr-2" />
+                AUDIT_LOG
+              </Button>
+            </div>
+
+            <div className="flex-1 flex flex-col gap-3">
+              <div className="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-widest">System_Dash</div>
+              <Card className="flex-1 border-slate-200 bg-slate-900 text-emerald-400 rounded-none overflow-hidden flex flex-col shadow-inner">
+                <div className="p-2 border-b border-slate-800 bg-slate-950 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Terminal className="h-3 w-3" />
+                    <span className="text-[9px] font-black uppercase">Live_Audit_Log</span>
+                  </div>
+                  <div className="flex gap-1">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  </div>
+                </div>
+                <ScrollArea className="flex-1 p-2 font-mono text-[9px] leading-tight">
+                  <div className="space-y-1">
+                    {logs.map((log) => (
+                      <div key={log.id} className="flex gap-2">
+                        <span className="text-slate-500 shrink-0">[{log.timestamp}]</span>
+                        <span className={cn(
+                          "font-bold shrink-0",
+                          log.level === "SYS" ? "text-blue-400" : "text-emerald-400"
+                        )}>{log.level}</span>
+                        <span className="break-all">{log.message}</span>
+                      </div>
+                    ))}
+                    {logs.length === 0 && <p className="text-slate-600">IDLE :: Waiting for system hooks...</p>}
+                  </div>
+                </ScrollArea>
+              </Card>
+              
+              <div className="p-2 bg-blue-50 border border-blue-100 text-[10px] leading-relaxed shrink-0">
+                <div className="flex items-center gap-2 mb-1 font-bold text-blue-900 uppercase">
+                  <Cpu className="h-3 w-3" />
+                  Session Data
+                </div>
+                <div className="flex justify-between"><span>Registry_Size:</span> <span className="font-bold">{students.length}</span></div>
+                <div className="flex justify-between"><span>Term_Status:</span> <span className="font-bold text-blue-600">LIVE</span></div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="border-b px-4 py-2 flex items-center bg-white">
+        {/* Entry Area */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-white">
+          <div className="border-b px-4 py-2 flex items-center bg-white shrink-0">
             <Search className="h-4 w-4 text-slate-400 mr-2" />
             <input 
               placeholder="QUICK_FILTER_REGISTRY..." 
@@ -310,15 +433,15 @@ export default function TeacherCRM() {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            <Table className="border-collapse">
+            <Table className="border-collapse table-fixed w-full">
               <TableHeader className="bg-slate-50 sticky top-0 z-10">
                 <TableRow className="hover:bg-transparent border-b">
                   <TableHead className="w-12 border-r text-[10px] font-bold uppercase text-slate-500 text-center">RL</TableHead>
-                  <TableHead className="w-64 border-r text-[10px] font-bold uppercase text-slate-500 px-4">Student_Identity</TableHead>
-                  <TableHead className="w-20 border-r text-[10px] font-bold uppercase text-slate-500 text-center">Grade</TableHead>
-                  <TableHead className="w-20 border-r text-[10px] font-bold uppercase text-slate-500 text-center">Sec</TableHead>
+                  <TableHead className="w-48 border-r text-[10px] font-bold uppercase text-slate-500 px-4">Student_Identity</TableHead>
+                  <TableHead className="w-16 border-r text-[10px] font-bold uppercase text-slate-500 text-center">Gr</TableHead>
+                  <TableHead className="w-16 border-r text-[10px] font-bold uppercase text-slate-500 text-center">Se</TableHead>
                   <TableHead className="w-20 border-r text-[10px] font-bold uppercase text-slate-500 text-center">Status</TableHead>
-                  <TableHead className="text-[10px] font-bold uppercase text-slate-500 px-4">Notes</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase text-slate-500 px-4">Reactive_Log / Observations</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -333,9 +456,9 @@ export default function TeacherCRM() {
                     <TableCell className="border-r font-bold text-slate-400 text-center">
                       {student.rollNo.toString().padStart(2, '0')}
                     </TableCell>
-                    <TableCell className="border-r px-4 font-bold uppercase tracking-tight">
+                    <TableCell className="border-r px-4 font-bold uppercase tracking-tight overflow-hidden text-ellipsis whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        <User className="h-3 w-3 text-slate-300" />
+                        <User className="h-3 w-3 text-slate-300 shrink-0" />
                         {student.name}
                       </div>
                     </TableCell>
@@ -368,8 +491,10 @@ export default function TeacherCRM() {
                     </TableCell>
                     <TableCell className="px-4 p-0">
                       <input 
-                        className="w-full h-10 bg-transparent outline-none px-1 text-slate-600 italic border-none focus:bg-white transition-colors"
-                        placeholder="[NULL_LOG]"
+                        className="w-full h-10 bg-transparent outline-none px-2 text-slate-600 italic border-none focus:bg-white transition-colors"
+                        placeholder="TYPE 'P', 'A', OR 'L' TO UPDATE STATUS..."
+                        value={student.note}
+                        onChange={(e) => handleNoteChange(student.id, e.target.value)}
                       />
                     </TableCell>
                   </TableRow>
@@ -380,14 +505,21 @@ export default function TeacherCRM() {
         </div>
       </div>
       
-      <div className="h-6 bg-slate-900 text-white flex items-center px-4 justify-between text-[9px] font-bold tracking-widest uppercase">
+      <div className="h-6 bg-slate-900 text-white flex items-center px-4 justify-between text-[9px] font-bold tracking-widest uppercase shrink-0">
         <div className="flex gap-4">
-          <span>SYS_READY</span>
+          <div className="flex items-center gap-1.5">
+            <Activity className="h-3 w-3 text-emerald-400" />
+            <span>SYS_READY</span>
+          </div>
           <span className="text-emerald-400">SESSION_AUTH_OK</span>
-          <span>KEYBOARD_NAV_ON</span>
+          <span>REACTIVE_LOGIC_ON</span>
         </div>
-        <div>
-          {new Date().toLocaleTimeString()} :: ADMIN_SESSION
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5">
+            <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+            <span>IDLE_DAEMON_LISTENING</span>
+          </div>
+          <span>{new Date().toLocaleTimeString()} :: ADMIN_SESSION</span>
         </div>
       </div>
     </div>
