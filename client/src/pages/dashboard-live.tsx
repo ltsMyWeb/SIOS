@@ -1,6 +1,5 @@
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
 import {
   ArrowRight,
   Bell,
@@ -18,15 +17,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-
-const fadeIn = {
-  hidden: { opacity: 0, y: 20 },
-  visible: (delay = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.45, delay },
-  }),
-};
 
 function LoadingState() {
   return (
@@ -68,12 +58,7 @@ export default function DashboardLive() {
   return (
     <div className="min-h-screen si-gradient">
       <div className="mx-auto max-w-6xl px-4 pb-16 pt-8 md:px-8 md:pt-10">
-        <motion.header
-          className="rounded-[32px] border border-white/55 bg-card/75 p-6 shadow-[var(--shadow-2)] backdrop-blur md:p-8"
-          initial="hidden"
-          animate="visible"
-          variants={fadeIn}
-        >
+        <header className="si-rise rounded-[32px] border border-white/55 bg-card/75 p-6 shadow-[var(--shadow-2)] backdrop-blur md:p-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs tracking-[0.16em] uppercase">
@@ -101,176 +86,132 @@ export default function DashboardLive() {
               </Button>
             </div>
           </div>
-        </motion.header>
+        </header>
 
         <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {[
-            {
-              label: "Students tracked",
-              value: data.kpis.totalStudents,
-              note: "Current live school roster",
-              icon: Users,
-            },
-            {
-              label: "Average attendance",
-              value: `${data.kpis.averageAttendance}%`,
-              note: "Whole-school attendance rate",
-              icon: CheckCircle2,
-            },
-            {
-              label: "Average overall",
-              value: `${data.kpis.averageOverall}%`,
-              note: "Academic average across students",
-              icon: TrendingUp,
-            },
-            {
-              label: "Students to review",
-              value: data.kpis.flaggedStudents,
-              note: "Need attendance or score follow-up",
-              icon: ShieldCheck,
-            },
-          ].map((item, index) => (
-            <motion.div key={item.label} custom={index * 0.06} initial="hidden" animate="visible" variants={fadeIn}>
-              <Card className="si-card rounded-[28px] border bg-card/75 p-5 backdrop-blur transition-transform duration-300 hover:-translate-y-1">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-foreground/64">{item.label}</p>
-                  <item.icon className="h-4 w-4 text-foreground/55" />
-                </div>
-                <p className="mt-4 font-serif text-4xl font-semibold">{item.value}</p>
-                <p className="mt-2 text-xs text-foreground/55">{item.note}</p>
-              </Card>
-            </motion.div>
+            { label: "Students tracked", value: data.kpis.totalStudents, note: "Current live school roster", icon: Users },
+            { label: "Average attendance", value: `${data.kpis.averageAttendance}%`, note: "Whole-school attendance rate", icon: CheckCircle2 },
+            { label: "Average overall", value: `${data.kpis.averageOverall}%`, note: "Academic average across students", icon: TrendingUp },
+            { label: "Students to review", value: data.kpis.flaggedStudents, note: "Need attendance or score follow-up", icon: ShieldCheck },
+          ].map((item) => (
+            <Card key={item.label} className="si-card rounded-[28px] border bg-card/75 p-5 backdrop-blur transition-transform duration-200 hover:-translate-y-0.5">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-foreground/64">{item.label}</p>
+                <item.icon className="h-4 w-4 text-foreground/55" />
+              </div>
+              <p className="mt-4 font-serif text-4xl font-semibold">{item.value}</p>
+              <p className="mt-2 text-xs text-foreground/55">{item.note}</p>
+            </Card>
           ))}
         </section>
 
         <section className="mt-6 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <motion.div custom={0.1} initial="hidden" animate="visible" variants={fadeIn}>
-            <Card className="si-card si-noise rounded-[30px] border bg-card/75 p-5 backdrop-blur">
+          <Card className="si-card si-noise rounded-[30px] border bg-card/75 p-5 backdrop-blur">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">Top class performance</p>
+                <p className="mt-1 text-xs text-foreground/58">Only the best-performing sections are shown here</p>
+              </div>
+              <BookOpen className="h-4 w-4 text-foreground/55" />
+            </div>
+            <div className="mt-5 grid gap-3">
+              {topClasses.length ? (
+                topClasses.map((item) => (
+                  <Link key={item.id} href={`/class/${item.id}`}>
+                    <Card className="rounded-[22px] border bg-background/55 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)]">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="font-medium">{item.name}</p>
+                          <p className="mt-1 text-xs text-foreground/55">
+                            {item.students} students • {item.atRisk} review cases • term {item.termDelta >= 0 ? "+" : ""}{item.termDelta}%
+                          </p>
+                        </div>
+                        <Badge variant="secondary" className="rounded-full px-3 py-1">{item.attendance}%</Badge>
+                      </div>
+                      <Progress value={item.attendance} className="mt-4 h-2" />
+                    </Card>
+                  </Link>
+                ))
+              ) : (
+                <div className="rounded-[22px] border border-foreground/10 bg-background/50 p-4 text-sm text-foreground/65">
+                  Class ranking will show here once live data is available.
+                </div>
+              )}
+            </div>
+          </Card>
+
+          <div className="grid gap-4">
+            <Card className="si-card rounded-[30px] border bg-card/75 p-5 backdrop-blur">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold">Top class performance</p>
-                  <p className="mt-1 text-xs text-foreground/58">Only the best-performing sections are shown here</p>
+                  <p className="text-sm font-semibold">Backend status</p>
+                  <p className="mt-1 text-xs text-foreground/58">Secure storage and login state</p>
                 </div>
-                <BookOpen className="h-4 w-4 text-foreground/55" />
+                <Database className="h-4 w-4 text-foreground/55" />
               </div>
-              <div className="mt-5 grid gap-3">
-                {topClasses.length ? (
-                  topClasses.map((item, index) => (
-                    <motion.div
-                      key={item.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.08 + index * 0.05 }}
-                    >
-                      <Link href={`/class/${item.id}`}>
-                        <Card className="rounded-[22px] border bg-background/55 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)]">
-                          <div className="flex items-start justify-between gap-4">
-                            <div>
-                              <p className="font-medium">{item.name}</p>
-                              <p className="mt-1 text-xs text-foreground/55">
-                                {item.students} students • {item.atRisk} review cases • term {item.termDelta >= 0 ? "+" : ""}
-                                {item.termDelta}%
-                              </p>
-                            </div>
-                            <Badge variant="secondary" className="rounded-full px-3 py-1">{item.attendance}%</Badge>
-                          </div>
-                          <Progress value={item.attendance} className="mt-4 h-2" />
-                        </Card>
-                      </Link>
-                    </motion.div>
+              <div className="mt-4 rounded-[22px] border border-foreground/10 bg-background/50 p-4">
+                <p className="font-medium">{data.backend.configured ? "Firebase connected" : "Backend still needs setup"}</p>
+                <p className="mt-2 text-sm text-foreground/65">
+                  {data.backend.configured
+                    ? "Teacher accounts and student changes are saving to the live backend."
+                    : data.backend.detail ?? "Add Firebase credentials in .env to enable live storage."}
+                </p>
+              </div>
+            </Card>
+
+            <Card className="si-card rounded-[30px] border bg-card/75 p-5 backdrop-blur">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold">School notes</p>
+                  <p className="mt-1 text-xs text-foreground/58">Important updates and quick action points</p>
+                </div>
+                <Bell className="h-4 w-4 text-foreground/55" />
+              </div>
+              <div className="mt-4 space-y-3">
+                {[...data.updates.slice(0, 2), ...data.insights.slice(0, 1)].map((item) => (
+                  <div key={item.id} className="rounded-[22px] border border-foreground/10 bg-background/50 p-4">
+                    <p className="font-medium">{item.title}</p>
+                    <p className="mt-2 text-sm text-foreground/65">{item.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <Card className="si-card rounded-[30px] border bg-card/75 p-5 backdrop-blur">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold">Students to review</p>
+                  <p className="mt-1 text-xs text-foreground/58">Quick links for follow-up</p>
+                </div>
+                <GraduationCap className="h-4 w-4 text-foreground/55" />
+              </div>
+              <div className="mt-4 space-y-3">
+                {reviewStudents.length ? (
+                  reviewStudents.map((student) => (
+                    <Link key={student.id} href={`/student/${student.id}`}>
+                      <div className="rounded-[22px] border border-foreground/10 bg-background/50 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)]">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="font-medium">{student.name}</p>
+                          <span className="text-xs text-foreground/55">Roll #{student.rollNo}</span>
+                        </div>
+                        <p className="mt-1 text-xs text-foreground/55">
+                          {student.classId.toUpperCase()} • Attendance {student.attendance}% • Overall {student.overall}%
+                        </p>
+                      </div>
+                    </Link>
                   ))
                 ) : (
                   <div className="rounded-[22px] border border-foreground/10 bg-background/50 p-4 text-sm text-foreground/65">
-                    Class ranking will show here once live data is available.
+                    No urgent student follow-up is showing right now.
                   </div>
                 )}
               </div>
             </Card>
-          </motion.div>
-
-          <div className="grid gap-4">
-            <motion.div custom={0.16} initial="hidden" animate="visible" variants={fadeIn}>
-              <Card className="si-card rounded-[30px] border bg-card/75 p-5 backdrop-blur">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold">Backend status</p>
-                    <p className="mt-1 text-xs text-foreground/58">Secure storage and login state</p>
-                  </div>
-                  <Database className="h-4 w-4 text-foreground/55" />
-                </div>
-                <div className="mt-4 rounded-[22px] border border-foreground/10 bg-background/50 p-4">
-                  <p className="font-medium">{data.backend.configured ? "Firebase connected" : "Backend still needs setup"}</p>
-                  <p className="mt-2 text-sm text-foreground/65">
-                    {data.backend.configured
-                      ? "Teacher accounts and student changes are saving to the live backend."
-                      : data.backend.detail ?? "Add Firebase credentials in .env to enable live storage."}
-                  </p>
-                </div>
-              </Card>
-            </motion.div>
-
-            <motion.div custom={0.22} initial="hidden" animate="visible" variants={fadeIn}>
-              <Card className="si-card rounded-[30px] border bg-card/75 p-5 backdrop-blur">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold">School notes</p>
-                    <p className="mt-1 text-xs text-foreground/58">Important updates and quick action points</p>
-                  </div>
-                  <Bell className="h-4 w-4 text-foreground/55" />
-                </div>
-                <div className="mt-4 space-y-3">
-                  {[...data.updates.slice(0, 2), ...data.insights.slice(0, 1)].map((item) => (
-                    <div key={item.id} className="rounded-[22px] border border-foreground/10 bg-background/50 p-4">
-                      <p className="font-medium">{item.title}</p>
-                      <p className="mt-2 text-sm text-foreground/65">{item.detail}</p>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </motion.div>
-
-            <motion.div custom={0.28} initial="hidden" animate="visible" variants={fadeIn}>
-              <Card className="si-card rounded-[30px] border bg-card/75 p-5 backdrop-blur">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold">Students to review</p>
-                    <p className="mt-1 text-xs text-foreground/58">Quick links for follow-up</p>
-                  </div>
-                  <GraduationCap className="h-4 w-4 text-foreground/55" />
-                </div>
-                <div className="mt-4 space-y-3">
-                  {reviewStudents.length ? (
-                    reviewStudents.map((student) => (
-                      <Link key={student.id} href={`/student/${student.id}`}>
-                        <div className="rounded-[22px] border border-foreground/10 bg-background/50 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)]">
-                          <div className="flex items-center justify-between gap-3">
-                            <p className="font-medium">{student.name}</p>
-                            <span className="text-xs text-foreground/55">Roll #{student.rollNo}</span>
-                          </div>
-                          <p className="mt-1 text-xs text-foreground/55">
-                            {student.classId.toUpperCase()} • Attendance {student.attendance}% • Overall {student.overall}%
-                          </p>
-                        </div>
-                      </Link>
-                    ))
-                  ) : (
-                    <div className="rounded-[22px] border border-foreground/10 bg-background/50 p-4 text-sm text-foreground/65">
-                      No urgent student follow-up is showing right now.
-                    </div>
-                  )}
-                </div>
-              </Card>
-            </motion.div>
           </div>
         </section>
 
-        <motion.section
-          className="mt-6 grid gap-4 md:grid-cols-[1.15fr_0.85fr]"
-          custom={0.34}
-          initial="hidden"
-          animate="visible"
-          variants={fadeIn}
-        >
+        <section className="mt-6 grid gap-4 md:grid-cols-[1.15fr_0.85fr]">
           <Card className="si-card rounded-[30px] border bg-card/75 p-5 backdrop-blur">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -305,7 +246,7 @@ export default function DashboardLive() {
               </Button>
             </div>
           </Card>
-        </motion.section>
+        </section>
       </div>
     </div>
   );
