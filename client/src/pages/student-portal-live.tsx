@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { ArrowLeft, Bell, BookOpen, LogOut, Trophy } from "lucide-react";
 import type { AppSession, SchoolCatalogResponse, StudentPortalResponse } from "@shared/schema";
+import SchoolNav from "@/components/school-nav";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,7 +16,11 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 
 const reveal = {
   hidden: { opacity: 0, y: 18 },
-  show: (delay = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.4, delay } }),
+  show: (delay = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, delay },
+  }),
 };
 
 export default function StudentPortalLive() {
@@ -66,10 +71,13 @@ export default function StudentPortalLive() {
   if (session?.role === "teacher") {
     return (
       <div className="min-h-screen si-gradient">
-        <div className="mx-auto max-w-3xl px-4 py-16">
+        <SchoolNav />
+        <div className="mx-auto max-w-3xl px-4 py-28">
           <Card className="si-card rounded-[28px] border bg-card/80 p-8 backdrop-blur">
             <p className="font-serif text-3xl font-semibold">Teacher session detected</p>
-            <p className="mt-3 text-sm text-foreground/65">Student Portal is only for students. Open the teacher console for class work.</p>
+            <p className="mt-3 text-sm text-foreground/65">
+              Student Portal is only for students. Open the teacher console for class work.
+            </p>
             <div className="mt-6 flex gap-3">
               <Button asChild className="rounded-2xl">
                 <Link href="/teacher-console">Open Teacher Console</Link>
@@ -87,10 +95,13 @@ export default function StudentPortalLive() {
   if (session?.role === "principal") {
     return (
       <div className="min-h-screen si-gradient">
-        <div className="mx-auto max-w-3xl px-4 py-16">
+        <SchoolNav />
+        <div className="mx-auto max-w-3xl px-4 py-28">
           <Card className="si-card rounded-[28px] border bg-card/80 p-8 backdrop-blur">
             <p className="font-serif text-3xl font-semibold">Principal session detected</p>
-            <p className="mt-3 text-sm text-foreground/65">Student Portal is only for students. Open the principal console for account management.</p>
+            <p className="mt-3 text-sm text-foreground/65">
+              Student Portal is only for students. Open the principal console for account management.
+            </p>
             <div className="mt-6 flex gap-3">
               <Button asChild className="rounded-2xl">
                 <Link href="/principal-console">Open Principal Console</Link>
@@ -108,7 +119,8 @@ export default function StudentPortalLive() {
   if (session?.role !== "student") {
     return (
       <div className="min-h-screen si-gradient">
-        <div className="mx-auto flex min-h-screen max-w-md items-center justify-center px-4">
+        <SchoolNav />
+        <div className="mx-auto flex min-h-screen max-w-md items-center justify-center px-4 pt-20">
           <motion.div initial="hidden" animate="show" variants={reveal}>
             <Card className="w-full rounded-[32px] border bg-card/80 p-8 shadow-[var(--shadow-2)] backdrop-blur">
               <div className="text-center">
@@ -165,7 +177,8 @@ export default function StudentPortalLive() {
   if (!data) {
     return (
       <div className="min-h-screen si-gradient">
-        <div className="mx-auto max-w-4xl px-4 py-16">
+        <SchoolNav />
+        <div className="mx-auto max-w-4xl px-4 py-28">
           <Card className="si-card rounded-[28px] border bg-card/80 p-8 backdrop-blur">
             <p className="font-serif text-3xl font-semibold">Loading student portal...</p>
           </Card>
@@ -178,7 +191,8 @@ export default function StudentPortalLive() {
 
   return (
     <div className="min-h-screen si-gradient">
-      <div className="mx-auto max-w-6xl px-4 pb-16 pt-8 md:px-8 md:pt-10">
+      <SchoolNav />
+      <div className="mx-auto max-w-6xl px-4 pb-24 pt-28 md:px-8 md:pt-32">
         <motion.header initial="hidden" animate="show" variants={reveal} className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -212,14 +226,13 @@ export default function StudentPortalLive() {
                 <div>
                   <p className="text-sm font-semibold">Student profile</p>
                   <p className="mt-1 text-xs text-foreground/58">
-                    {data.classroom.name} • Roll #{data.student.rollNo}
+                    {data.classroom.name} â€¢ Roll #{data.student.rollNo}
                   </p>
                 </div>
                 <Badge variant="secondary" className="rounded-full px-3 py-1.5">
                   {data.student.status || "No mark today"}
                 </Badge>
               </div>
-
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
                 <div className="rounded-[22px] border border-foreground/10 bg-background/45 p-4">
                   <p className="text-xs text-foreground/58">Attendance</p>
@@ -232,7 +245,6 @@ export default function StudentPortalLive() {
                   <Progress value={data.student.overall} className="mt-3 h-2" />
                 </div>
               </div>
-
               <div className="mt-5 rounded-[22px] border border-foreground/10 bg-background/45 p-4">
                 <p className="text-sm font-semibold">Teacher note</p>
                 <p className="mt-2 text-sm text-foreground/68">{data.student.note}</p>
@@ -307,6 +319,35 @@ export default function StudentPortalLive() {
             </Card>
           </motion.div>
         </section>
+
+        <motion.section
+          custom={0.32}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-120px" }}
+          variants={reveal}
+          className="mt-8 grid gap-4 lg:grid-cols-3"
+        >
+          {[
+            {
+              title: "Easy results view",
+              detail: "Important academic numbers show first so students do not need to search around the page.",
+            },
+            {
+              title: "Notices in one place",
+              detail: "School updates sit beside progress so students and parents can read both together.",
+            },
+            {
+              title: "Comfortable design",
+              detail: "Soft motion and clear cards make the portal feel more alive without turning into a heavy app.",
+            },
+          ].map((item) => (
+            <Card key={item.title} className="si-card rounded-[28px] border bg-card/75 p-5 backdrop-blur">
+              <p className="text-sm font-semibold">{item.title}</p>
+              <p className="mt-3 text-sm leading-6 text-foreground/67">{item.detail}</p>
+            </Card>
+          ))}
+        </motion.section>
       </div>
     </div>
   );
