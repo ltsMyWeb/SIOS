@@ -289,41 +289,63 @@ function buildTeacherAnalyses(students: StudentRecord[], classes: Classroom[]): 
   return students
     .map((student) => {
       const classroom = classes.find((item) => item.id === student.classId);
-      const strengths = Object.entries(student.subjectScores)
-        .filter(([, score]) => score >= 80)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 2)
-        .map(([subject, score]) => `${subject} is strong at ${score}%`);
+      const subjectEntries = Object.entries(student.subjectScores).sort((a, b) => a[1] - b[1]);
+      const hasRecordedMarks = subjectEntries.some(([, score]) => score > 0);
+      const strongestSubjects = [...subjectEntries].sort((a, b) => b[1] - a[1]).slice(0, 2);
+      const weakestSubjects = subjectEntries.filter(([, score]) => score > 0 && score < 75).slice(0, 3);
 
-      const focusAreas = Object.entries(student.subjectScores)
-        .filter(([, score]) => score < 70)
-        .sort((a, b) => a[1] - b[1])
-        .slice(0, 3)
-        .map(([subject, score]) => `${subject} needs support at ${score}%`);
+      const strengths = hasRecordedMarks
+        ? strongestSubjects.map(([subject, score]) =>
+            score >= 85 ? `${subject} is a clear strength at ${score}%` : `${subject} is holding steady at ${score}%`,
+          )
+        : ["Marks have not been entered yet for this student."];
 
-      const actionPlan = [
-        student.attendance < 88 ? "Watch attendance for the next 10 school days." : "Keep attendance routine steady.",
-        focusAreas[0]
-          ? `Plan one short revision block for ${focusAreas[0].split(" ")[0]}.`
-          : "Push one challenge worksheet to maintain academic momentum.",
-        student.note ? `Use the teacher note during the next parent update: "${student.note}"` : "Add one fresh teacher note after the next review.",
-      ];
+      const focusAreas = !hasRecordedMarks
+        ? ["Add current subject marks to generate a useful report-card summary."]
+        : weakestSubjects.length
+          ? weakestSubjects.map(([subject, score]) =>
+              score < 60 ? `${subject} needs immediate support at ${score}%` : `${subject} should be lifted from ${score}%`,
+            )
+          : ["No weak subject is standing out right now."];
 
-      const targetOverall = Math.min(100, Math.max(student.overall + 6, 75));
+      const actionPlan = !hasRecordedMarks
+        ? [
+            "Enter the student's latest subject marks before the next review.",
+            "Add one teacher comment about participation or revision habits.",
+            "Reopen the report card radar once marks are updated.",
+          ]
+        : [
+            student.attendance < 88 ? "Watch attendance closely for the next 10 school days." : "Keep attendance routine steady this week.",
+            weakestSubjects[0]
+              ? `Schedule one focused revision block for ${weakestSubjects[0][0]}.`
+              : `Give one enrichment task in ${strongestSubjects[0]?.[0] ?? "the strongest subject"}.`,
+            student.note
+              ? `Use the teacher note in the next parent update: "${student.note}"`
+              : "Add one fresh teacher note after the next classroom review.",
+          ];
+
+      const attendanceAdjustment = student.attendance < 85 ? 3 : student.attendance < 92 ? 5 : 7;
+      const targetOverall = hasRecordedMarks
+        ? Math.min(100, Math.max(student.overall + attendanceAdjustment, student.overall + 3))
+        : Math.max(student.overall, 0);
       const priority: TeacherAnalysis["priority"] =
         student.overall < 65 || student.attendance < 82 ? "high" : student.overall < 75 || student.attendance < 90 ? "medium" : "low";
+      const topStrength = strongestSubjects[0];
+      const topConcern = weakestSubjects[0];
+      const summary = !hasRecordedMarks
+        ? `${student.name} does not have enough recorded marks yet. Add subject scores to generate an academic summary.`
+        : priority === "high"
+          ? `${student.name} needs urgent follow-up. ${topConcern ? `${topConcern[0]} is down at ${topConcern[1]}%` : "Academic performance is below the expected range"}, and attendance is ${student.attendance}%.`
+          : priority === "medium"
+            ? `${student.name} can improve quickly with one focused support cycle. ${topConcern ? `${topConcern[0]} is the main drag at ${topConcern[1]}%` : "Attendance is the main watchpoint"}, while ${topStrength ? `${topStrength[0]} remains a strength at ${topStrength[1]}%` : "other subjects stay fairly balanced"}.`
+            : `${student.name} is doing well overall. ${topStrength ? `${topStrength[0]} leads at ${topStrength[1]}%` : "Subjects are balanced"}, and attendance is holding at ${student.attendance}%.`;
 
       return {
         studentId: student.id,
         studentName: student.name,
         classLabel: classroom?.name ?? student.classId.toUpperCase(),
         priority,
-        summary:
-          priority === "high"
-            ? `${student.name} needs an urgent academic follow-up plan.`
-            : priority === "medium"
-              ? `${student.name} can improve quickly with one focused support cycle.`
-              : `${student.name} is doing well and can be pushed toward higher achievement.`,
+        summary,
         strengths: strengths.length ? strengths : ["General classroom consistency is improving."],
         focusAreas: focusAreas.length ? focusAreas : ["No major weak subject is showing right now."],
         actionPlan,

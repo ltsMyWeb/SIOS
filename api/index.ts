@@ -1,15 +1,7 @@
-{
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/index.ts",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "api/index.ts"
-    }
-  ]
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { createApp } from "../server/app";
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const app = await createApp();
+  return app(req, res);
 }

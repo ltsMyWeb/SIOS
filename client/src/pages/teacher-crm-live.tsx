@@ -107,6 +107,7 @@ export default function TeacherConsoleLive() {
   const davFeed = overviewQuery.data?.davFeed;
   const [analysisStudentId, setAnalysisStudentId] = useState("");
   const activeAnalysis = analyses.find((item) => item.studentId === analysisStudentId) ?? analyses[0];
+  const activeStudent = students.find((item) => item.id === activeAnalysis?.studentId);
 
   if (session?.role === "principal") {
     return (
@@ -437,9 +438,48 @@ export default function TeacherConsoleLive() {
                         </Badge>
                       </div>
                       <p className="mt-3 text-sm text-foreground/68">{activeAnalysis.summary}</p>
-                      <p className="mt-3 text-xs uppercase tracking-[0.18em] text-foreground/45">Target overall</p>
-                      <p className="mt-1 font-serif text-3xl font-semibold">{activeAnalysis.targetOverall}%</p>
+                      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.18em] text-foreground/45">Current overall</p>
+                          <p className="mt-1 font-serif text-3xl font-semibold">{activeStudent?.overall ?? 0}%</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.18em] text-foreground/45">Attendance</p>
+                          <p className="mt-1 font-serif text-3xl font-semibold">{activeStudent?.attendance ?? 0}%</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.18em] text-foreground/45">Suggested target</p>
+                          <p className="mt-1 font-serif text-3xl font-semibold">{activeAnalysis.targetOverall}%</p>
+                        </div>
+                      </div>
                     </div>
+
+                    {activeStudent ? (
+                      <div className="rounded-[24px] border border-foreground/10 bg-background/45 p-4">
+                        <p className="text-sm font-semibold">Subject snapshot</p>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                          {Object.entries(activeStudent.subjectScores)
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([subject, score]) => (
+                              <div key={subject} className="rounded-[18px] border border-foreground/10 bg-background/55 p-3">
+                                <p className="text-xs uppercase tracking-[0.16em] text-foreground/45">{subject}</p>
+                                <p className="mt-2 font-serif text-2xl font-semibold">{score}%</p>
+                                <p className="mt-1 text-xs text-foreground/58">
+                                  {score === 0
+                                    ? "Marks not entered yet"
+                                    : score < 60
+                                      ? "Needs urgent support"
+                                      : score < 75
+                                        ? "Needs focused revision"
+                                        : score < 85
+                                          ? "On track"
+                                          : "Strong subject"}
+                                </p>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    ) : null}
 
                     <div className="grid gap-4 md:grid-cols-3">
                       <div className="rounded-[22px] border border-foreground/10 bg-background/45 p-4">
@@ -487,10 +527,16 @@ export default function TeacherConsoleLive() {
             </div>
             <div className="mt-4 space-y-3">
               {davFeed?.notices.slice(0, 3).map((item) => (
-                <div key={item.id} className="rounded-[22px] border border-foreground/10 bg-background/45 p-4">
+                <a
+                  key={item.id}
+                  href={item.url ?? davFeed.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block rounded-[22px] border border-foreground/10 bg-background/45 p-4 transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)]"
+                >
                   <p className="font-medium">{item.title}</p>
                   <p className="mt-2 text-xs text-foreground/55">{item.publishedAt}</p>
-                </div>
+                </a>
               )) ?? null}
             </div>
             <div className="mt-4 grid gap-3">
