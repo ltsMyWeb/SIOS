@@ -1,0 +1,28 @@
+runConfig:
+  minInstances: 0
+
+env:
+  - variable: FIREBASE_PROJECT_ID
+    value: sios-ixclass
+    availability:
+      - RUNTIME
+  - variable: FIREBASE_STORAGE_BUCKET
+    value: sios-ixclass.firebasestorage.app
+    availability:
+      - RUNTIME
+  - variable: FIREBASE_CLIENT_EMAIL
+    secret: firebase-client-email
+    availability:
+      - RUNTIME
+  - variable: FIREBASE_PRIVATE_KEY
+    secret: firebase-private-key
+    availability:
+      - RUNTIME
+  - variable: SESSION_SECRET
+    secret: session-secret
+    availability:
+      - RUNTIME
+  - variable: PRINCIPAL_ACCESS_CODE
+    secret: principal-access-code
+    availability:
+      - RUNTIME
