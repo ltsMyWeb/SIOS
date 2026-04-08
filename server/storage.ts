@@ -20,6 +20,7 @@ import {
   type Classroom,
   type CreateStudentInput,
   type CreateTeacherInput,
+  type DavPublicFeed,
   type DashboardResponse,
   type PrincipalOverviewResponse,
   type PublicTeacher,
@@ -27,6 +28,7 @@ import {
   type SchoolClassOption,
   type SchoolUpdate,
   type StudentDetailResponse,
+  type TeacherAnalysis,
   type StudentPortalResponse,
   type StudentRecord,
   type TeacherAccount,
@@ -37,6 +39,7 @@ import {
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import type { Firestore } from "firebase-admin/firestore";
+import { getDavPublicFeed } from "./dav-site";
 import { describeFirebaseIssue, getFirestoreDb, probeFirestore } from "./firebase";
 import { generateAccessCode, hashPassword, setPrincipalCode, verifyPassword } from "./principal-auth";
 import { seedClasses, seedStudents } from "./seed-data";
@@ -84,6 +87,38 @@ const GRADE_ORDER = ["Pre-Primary", "1", "2", "3", "4", "5", "6", "7", "8", "9",
 
 function round(value: number) {
   return Math.round(value * 10) / 10;
+}
+
+function getTodayDateKey() {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  return formatter.format(new Date());
+}
+
+function withDerivedAttendance(student: StudentRecord): StudentRecord {
+  const fallbackHistory =
+    !student.attendanceHistory.length && student.status
+      ? [
+          {
+            dateKey: getTodayDateKey(),
+            status: student.status,
+            markedAt: student.updatedAt || new Date().toISOString(),
+            note: student.note,
+          },
+        ]
+      : student.attendanceHistory;
+  const todayEntry = fallbackHistory.find((entry) => entry.dateKey === getTodayDateKey());
+  return {
+    ...student,
+    attendanceHistory: fallbackHistory,
+    status: todayEntry?.status ?? "",
+    updatedAt: student.updatedAt || todayEntry?.markedAt || "",
+  };
 }
 
 function isAtRisk(student: StudentRecord) {
@@ -250,6 +285,98 @@ function buildStudentRecommendations(student: StudentRecord): StudentDetailRespo
   ];
 }
 
+function buildTeacherAnalyses(students: StudentRecord[], classes: Classroom[]): TeacherAnalysis[] {
+  return students
+    .map((student) => {
+      const classroom = classes.find((item) => item.id === student.classId);
+      const subjectEntries = Object.entries(student.subjectScores).sort((a, b) => a[1] - b[1]);
+      const hasRecordedMarks = subjectEntries.some(([, score]) => score > 0);
+      const strongestSubjects = [...subjectEntries].sort((a, b) => b[1] - a[1]).slice(0, 2);
+      const weakestSubjects = subjectEntries.filter(([, score]) => score > 0 && score < 75).slice(0, 3);
+
+      const strengths = hasRecordedMarks
+        ? strongestSubjects.map(([subject, score]) =>
+            score >= 85 ? `${subject} is a clear strength at ${score}%` : `${subject} is holding steady at ${score}%`,
+          )
+        : ["Marks have not been entered yet for this student."];
+
+      const focusAreas = !hasRecordedMarks
+        ? ["Add current subject marks to generate a useful report-card summary."]
+        : weakestSubjects.length
+          ? weakestSubjects.map(([subject, score]) =>
+              score < 60 ? `${subject} needs immediate support at ${score}%` : `${subject} should be lifted from ${score}%`,
+            )
+          : ["No weak subject is standing out right now."];
+
+      const actionPlan = !hasRecordedMarks
+        ? [
+            "Enter the student's latest subject marks before the next review.",
+            "Add one teacher comment about participation or revision habits.",
+            "Reopen the report card radar once marks are updated.",
+          ]
+        : [
+            student.attendance < 88 ? "Watch attendance closely for the next 10 school days." : "Keep attendance routine steady this week.",
+            weakestSubjects[0]
+              ? `Schedule one focused revision block for ${weakestSubjects[0][0]}.`
+              : `Give one enrichment task in ${strongestSubjects[0]?.[0] ?? "the strongest subject"}.`,
+            student.note
+              ? `Use the teacher note in the next parent update: "${student.note}"`
+              : "Add one fresh teacher note after the next classroom review.",
+          ];
+
+      const attendanceAdjustment = student.attendance < 85 ? 3 : student.attendance < 92 ? 5 : 7;
+      const targetOverall = hasRecordedMarks
+        ? Math.min(100, Math.max(student.overall + attendanceAdjustment, student.overall + 3))
+        : Math.max(student.overall, 0);
+      const priority: TeacherAnalysis["priority"] =
+        student.overall < 65 || student.attendance < 82 ? "high" : student.overall < 75 || student.attendance < 90 ? "medium" : "low";
+      const topStrength = strongestSubjects[0];
+      const topConcern = weakestSubjects[0];
+      const summary = !hasRecordedMarks
+        ? `${student.name} does not have enough recorded marks yet. Add subject scores to generate an academic summary.`
+        : priority === "high"
+          ? `${student.name} needs urgent follow-up. ${topConcern ? `${topConcern[0]} is down at ${topConcern[1]}%` : "Academic performance is below the expected range"}, and attendance is ${student.attendance}%.`
+          : priority === "medium"
+            ? `${student.name} can improve quickly with one focused support cycle. ${topConcern ? `${topConcern[0]} is the main drag at ${topConcern[1]}%` : "Attendance is the main watchpoint"}, while ${topStrength ? `${topStrength[0]} remains a strength at ${topStrength[1]}%` : "other subjects stay fairly balanced"}.`
+            : `${student.name} is doing well overall. ${topStrength ? `${topStrength[0]} leads at ${topStrength[1]}%` : "Subjects are balanced"}, and attendance is holding at ${student.attendance}%.`;
+
+      return {
+        studentId: student.id,
+        studentName: student.name,
+        classLabel: classroom?.name ?? student.classId.toUpperCase(),
+        priority,
+        summary,
+        strengths: strengths.length ? strengths : ["General classroom consistency is improving."],
+        focusAreas: focusAreas.length ? focusAreas : ["No major weak subject is showing right now."],
+        actionPlan,
+        targetOverall,
+      };
+    })
+    .sort((a, b) => {
+      const rank = { high: 0, medium: 1, low: 2 };
+      return rank[a.priority] - rank[b.priority] || a.studentName.localeCompare(b.studentName);
+    });
+}
+
+function emptyDavFeed(): DavPublicFeed {
+  return {
+    schoolName: "DAV Public School",
+    campusLabel: "East of Loni Road, Shahdara, Delhi",
+    sourceUrl: "https://daveastofloniroad.org",
+    fetchedAt: new Date().toISOString(),
+    notices: [],
+    birthdays: [],
+    quickLinks: [
+      { id: "dav-home", title: "Official school website", url: "https://daveastofloniroad.org" },
+      { id: "dav-gallery", title: "Photo gallery", url: "https://daveastofloniroad.org/Full/Photo/all" },
+      { id: "dav-contact", title: "Contact us", url: "https://daveastofloniroad.org/34E2E822-B2A3-4EFF-9D6C-986FFD77F5DD/CMS/Page/Contact-Us" },
+    ],
+    contact: {
+      address: "DAV Public School, East of Loni Road, Shahdara, Delhi",
+    },
+  };
+}
+
 function sanitizeTeacher(teacher: TeacherAccount): PublicTeacher {
   return publicTeacherSchema.parse({
     id: teacher.id,
@@ -282,34 +409,40 @@ abstract class BaseStorage implements IStorage {
 
   async getSchoolCatalog(): Promise<SchoolCatalogResponse> {
     const { classes, students } = await this.readCollections();
-    const summaries = classes.map((classroom) => summarizeClassroom(classroom, students.filter((student) => student.classId === classroom.id)));
+    const activeStudents = students.map(withDerivedAttendance);
+    const summaries = classes.map((classroom) => summarizeClassroom(classroom, activeStudents.filter((student) => student.classId === classroom.id)));
+    const davFeed = await getDavPublicFeed();
 
     return schoolCatalogResponseSchema.parse({
       name: SCHOOL_NAME,
       classes: sortClasses(classes).map(toClassOption),
-      updates: buildSchoolUpdates(summaries, students),
+      updates: buildSchoolUpdates(summaries, activeStudents),
+      davFeed,
       backend: this.getBackendMeta(),
     });
   }
 
   async getDashboardData(): Promise<DashboardResponse> {
     const { classes, students } = await this.readCollections();
+    const activeStudents = students.map(withDerivedAttendance);
     const summaries = sortClasses(
-      classes.map((classroom) => summarizeClassroom(classroom, students.filter((student) => student.classId === classroom.id))),
+      classes.map((classroom) => summarizeClassroom(classroom, activeStudents.filter((student) => student.classId === classroom.id))),
     );
-    const averageAttendance = students.reduce((acc, student) => acc + student.attendance, 0) / Math.max(1, students.length);
-    const averageOverall = students.reduce((acc, student) => acc + student.overall, 0) / Math.max(1, students.length);
+    const averageAttendance = activeStudents.reduce((acc, student) => acc + student.attendance, 0) / Math.max(1, activeStudents.length);
+    const averageOverall = activeStudents.reduce((acc, student) => acc + student.overall, 0) / Math.max(1, activeStudents.length);
+    const davFeed = await getDavPublicFeed();
 
     return dashboardResponseSchema.parse({
       classes: summaries,
-      students: students.sort((a, b) => a.name.localeCompare(b.name)),
-      insights: buildInsights(summaries, students),
-      updates: buildSchoolUpdates(summaries, students),
+      students: activeStudents.sort((a, b) => a.name.localeCompare(b.name)),
+      insights: buildInsights(summaries, activeStudents),
+      updates: buildSchoolUpdates(summaries, activeStudents),
+      davFeed,
       kpis: {
-        totalStudents: students.length,
+        totalStudents: activeStudents.length,
         averageAttendance: round(averageAttendance),
         averageOverall: round(averageOverall),
-        flaggedStudents: students.filter(isAtRisk).length,
+        flaggedStudents: activeStudents.filter(isAtRisk).length,
       },
       backend: this.getBackendMeta(),
     });
@@ -320,7 +453,7 @@ abstract class BaseStorage implements IStorage {
     const classroom = classes.find((item) => item.id === classId);
     if (!classroom) return null;
 
-    const classStudents = students.filter((student) => student.classId === classId).sort((a, b) => a.rollNo - b.rollNo);
+    const classStudents = students.filter((student) => student.classId === classId).map(withDerivedAttendance).sort((a, b) => a.rollNo - b.rollNo);
     const summary = summarizeClassroom(classroom, classStudents);
     const bestStudent = [...classStudents].sort((a, b) => b.overall - a.overall)[0] ?? classStudents[0];
     const atRiskStudent = [...classStudents].sort((a, b) => a.overall + a.attendance - (b.overall + b.attendance))[0] ?? classStudents[0];
@@ -347,10 +480,12 @@ abstract class BaseStorage implements IStorage {
     const classroom = classes.find((item) => item.id === student.classId);
     if (!classroom) return null;
 
+    const activeStudent = withDerivedAttendance(student);
+
     return studentDetailResponseSchema.parse({
-      student,
-      classroom: summarizeClassroom(classroom, students.filter((item) => item.classId === classroom.id)),
-      recommendations: buildStudentRecommendations(student),
+      student: activeStudent,
+      classroom: summarizeClassroom(classroom, students.filter((item) => item.classId === classroom.id).map(withDerivedAttendance)),
+      recommendations: buildStudentRecommendations(activeStudent),
       backend: this.getBackendMeta(),
     });
   }
@@ -363,30 +498,38 @@ abstract class BaseStorage implements IStorage {
     const classroom = classes.find((item) => item.id === student.classId);
     if (!classroom) return null;
 
-    const summaries = classes.map((item) => summarizeClassroom(item, students.filter((studentItem) => studentItem.classId === item.id)));
+    const activeStudent = withDerivedAttendance(student);
+    const activeStudents = students.map(withDerivedAttendance);
+    const summaries = classes.map((item) => summarizeClassroom(item, activeStudents.filter((studentItem) => studentItem.classId === item.id)));
+    const davFeed = await getDavPublicFeed();
 
     return studentPortalResponseSchema.parse({
-      student,
-      classroom: summarizeClassroom(classroom, students.filter((item) => item.classId === classroom.id)),
-      recommendations: buildStudentRecommendations(student),
-      updates: buildSchoolUpdates(summaries, students),
+      student: activeStudent,
+      classroom: summarizeClassroom(classroom, activeStudents.filter((item) => item.classId === classroom.id)),
+      recommendations: buildStudentRecommendations(activeStudent),
+      updates: buildSchoolUpdates(summaries, activeStudents),
+      davFeed,
       backend: this.getBackendMeta(),
     });
   }
 
   async getTeacherOverview(classIds: string[]): Promise<TeacherOverviewResponse> {
     const { classes, students } = await this.readCollections();
+    const activeStudents = students.map(withDerivedAttendance);
     const allowedClassIds = new Set(classIds.map((item) => item.toLowerCase()));
-    const filteredStudents = students.filter((student) => allowedClassIds.has(student.classId.toLowerCase()));
+    const filteredStudents = activeStudents.filter((student) => allowedClassIds.has(student.classId.toLowerCase()));
     const filteredClasses = sortClasses(
       classes
         .filter((classroom) => allowedClassIds.has(classroom.id.toLowerCase()))
         .map((classroom) => summarizeClassroom(classroom, filteredStudents.filter((student) => student.classId === classroom.id))),
     );
+    const davFeed = await getDavPublicFeed();
 
     return teacherOverviewResponseSchema.parse({
       students: filteredStudents.sort((a, b) => a.classId.localeCompare(b.classId) || a.rollNo - b.rollNo),
       classes: filteredClasses,
+      analyses: buildTeacherAnalyses(filteredStudents, classes),
+      davFeed,
       logs: buildLogs(filteredClasses, filteredStudents, this.getBackendMeta()),
       backend: this.getBackendMeta(),
     });
@@ -538,6 +681,8 @@ abstract class BaseStorage implements IStorage {
       last7: [0, 0, 0, 0, 0, 0, 0],
       status: "",
       note: "Newly enrolled from Teacher Console.",
+      attendanceHistory: [],
+      updatedAt: new Date().toISOString(),
     });
 
     return this.writeStudent(newStudent);
@@ -548,11 +693,27 @@ abstract class BaseStorage implements IStorage {
     const existing = students.find((item) => item.id === studentId);
     if (!existing) return null;
 
+    const todayDateKey = getTodayDateKey();
+    const nextAttendanceHistory =
+      patch.status
+        ? [
+            ...existing.attendanceHistory.filter((entry) => entry.dateKey !== todayDateKey),
+            {
+              dateKey: todayDateKey,
+              status: patch.status,
+              markedAt: new Date().toISOString(),
+              note: patch.note ?? existing.note,
+            },
+          ].sort((a, b) => a.dateKey.localeCompare(b.dateKey))
+        : existing.attendanceHistory;
+
     const updated = studentSchema.parse({
       ...existing,
       ...patch,
       note: patch.note ?? existing.note,
-      status: patch.status ?? existing.status,
+      status: patch.status ?? withDerivedAttendance(existing).status,
+      attendanceHistory: nextAttendanceHistory,
+      updatedAt: new Date().toISOString(),
     });
 
     return this.writeStudent(updated);
@@ -673,6 +834,7 @@ class FirebaseStorage extends BaseStorage {
         students: [],
         insights: [],
         updates: [],
+        davFeed: emptyDavFeed(),
         kpis: { totalStudents: 0, averageAttendance: 0, averageOverall: 0, flaggedStudents: 0 },
         backend: this.getBackendMeta(),
       });
@@ -690,6 +852,7 @@ class FirebaseStorage extends BaseStorage {
         name: SCHOOL_NAME,
         classes: sortClasses(seedClasses).map(toClassOption),
         updates: buildSchoolUpdates([], []),
+        davFeed: emptyDavFeed(),
         backend: this.getBackendMeta(),
       });
     }
@@ -738,6 +901,8 @@ class FirebaseStorage extends BaseStorage {
       return teacherOverviewResponseSchema.parse({
         students: [],
         classes: [],
+        analyses: [],
+        davFeed: emptyDavFeed(),
         logs: [
           {
             id: "firebase-unavailable",
@@ -791,6 +956,7 @@ class UnconfiguredFirebaseStorage implements IStorage {
       name: SCHOOL_NAME,
       classes: sortClasses(seedClasses).map(toClassOption),
       updates: buildSchoolUpdates([], []),
+      davFeed: emptyDavFeed(),
       backend: this.getBackendMeta(),
     });
   }
@@ -801,6 +967,7 @@ class UnconfiguredFirebaseStorage implements IStorage {
       students: [],
       insights: [],
       updates: buildSchoolUpdates([], []),
+      davFeed: emptyDavFeed(),
       kpis: { totalStudents: 0, averageAttendance: 0, averageOverall: 0, flaggedStudents: 0 },
       backend: this.getBackendMeta(),
     });
@@ -822,6 +989,8 @@ class UnconfiguredFirebaseStorage implements IStorage {
     return teacherOverviewResponseSchema.parse({
       students: [],
       classes: [],
+      analyses: [],
+      davFeed: emptyDavFeed(),
       logs: [
         {
           id: "firebase-missing",
