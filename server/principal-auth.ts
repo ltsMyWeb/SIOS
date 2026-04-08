@@ -13,7 +13,10 @@ export function setPrincipalCode(nextCode: string) {
 }
 
 export function verifyPrincipalCode(candidate: string) {
-  return candidate.trim() === currentPrincipalCode;
+  const expected = Buffer.from(currentPrincipalCode.trim());
+  const actual = Buffer.from(candidate.trim());
+  if (expected.length !== actual.length) return false;
+  return timingSafeEqual(expected, actual);
 }
 
 export function generateAccessCode() {

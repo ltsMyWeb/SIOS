@@ -1,4 +1,4 @@
-import type { Classroom, StudentRecord } from "@shared/schema";
+import { studentSchema, type Classroom, type StudentRecord } from "@shared/schema";
 
 const lowerGrades = ["Pre-Primary", "1", "2", "3", "4", "5", "6", "7", "8"];
 const seniorGrades = ["9", "10", "11", "12"];
@@ -50,4 +50,19 @@ export const seedStudents: StudentRecord[] = [
   { id: "st-032", name: "Naina Kapoor", classId: "11b", rollNo: 32, section: "B", attendance: 93, overall: 87, subjectScores: { Math: 84, Science: 90, English: 86, Social: 80, Computer: 89 }, last7: [83, 84, 85, 86, 86, 87, 87], status: "P", note: "Good balance across senior subjects." },
   { id: "st-041", name: "Vivaan Sharma", classId: "12c", rollNo: 41, section: "C", attendance: 91, overall: 81, subjectScores: { Math: 78, Science: 82, English: 79, Social: 76, Computer: 85 }, last7: [78, 79, 79, 80, 80, 81, 81], status: "P", note: "Steady performance before final review cycle." },
   { id: "st-052", name: "Myra Das", classId: "preprimarya", rollNo: 52, section: "A", attendance: 98, overall: 95, subjectScores: { Math: 96, Science: 94, English: 95, Social: 93, Computer: 92 }, last7: [91, 92, 93, 94, 95, 95, 95], status: "P", note: "Excellent participation and classroom confidence." },
-];
+].map((student) =>
+  studentSchema.parse({
+    ...student,
+    attendanceHistory: student.status
+      ? [
+          {
+            dateKey: "2026-04-08",
+            status: student.status,
+            markedAt: "2026-04-08T08:00:00.000Z",
+            note: student.note,
+          },
+        ]
+      : [],
+    updatedAt: "2026-04-08T08:00:00.000Z",
+  }),
+);

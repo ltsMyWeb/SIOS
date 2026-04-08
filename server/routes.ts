@@ -69,6 +69,15 @@ function clearSession(req: Parameters<RequestHandler>[0]) {
   req.session.classIds = [];
 }
 
+function regenerateSession(req: Parameters<RequestHandler>[0]) {
+  return new Promise<void>((resolve, reject) => {
+    req.session.regenerate((error) => {
+      if (error) return reject(error);
+      resolve();
+    });
+  });
+}
+
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   app.get("/api/health", async (_req, res) => {
     const backend = await probeFirestore();
@@ -126,7 +135,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const match = await storage.authenticateTeacher(parsed.data.loginId, parsed.data.password);
       if (!match) return res.status(401).json({ message: "Invalid login ID or password" });
 
-      clearSession(req);
+      await regenerateSession(req);
       req.session.authenticatedRole = "teacher";
       req.session.teacherId = match.id;
       req.session.classIds = match.classIds;
@@ -141,18 +150,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.post("/api/teacher-crm/login", teacherLoginHandler);
 
   app.post("/api/principal/login", (req, res, next) => {
-    try {
+    (async () => {
       const parsed = principalAuthSchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ message: "Invalid principal code payload" });
       if (!verifyPrincipalCode(parsed.data.principalCode)) return res.status(401).json({ message: "Invalid principal code" });
 
-      clearSession(req);
+      await regenerateSession(req);
       req.session.authenticatedRole = "principal";
       req.session.label = "Principal";
       res.json(buildSessionResponse(req));
-    } catch (error) {
+    })().catch((error) => {
       next(error);
-    }
+    });
   });
 
   app.post("/api/student-portal/login", async (req, res, next) => {
@@ -162,7 +171,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const match = await storage.authenticateStudent(parsed.data.classId, parsed.data.rollNo, parsed.data.studentName);
       if (!match) return res.status(401).json({ message: "Student record not found for the details entered" });
 
-      clearSession(req);
+      await regenerateSession(req);
       req.session.authenticatedRole = "student";
       req.session.studentId = match.id;
       req.session.classIds = match.classIds;

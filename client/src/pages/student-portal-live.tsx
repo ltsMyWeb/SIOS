@@ -188,6 +188,7 @@ export default function StudentPortalLive() {
   }
 
   const scoreEntries = Object.entries(data.student.subjectScores);
+  const davFeed = data.davFeed;
 
   return (
     <div className="min-h-screen si-gradient">
@@ -248,6 +249,23 @@ export default function StudentPortalLive() {
               <div className="mt-5 rounded-[22px] border border-foreground/10 bg-background/45 p-4">
                 <p className="text-sm font-semibold">Teacher note</p>
                 <p className="mt-2 text-sm text-foreground/68">{data.student.note}</p>
+                <p className="mt-3 text-xs text-foreground/55">
+                  Last updated: {data.student.updatedAt ? new Date(data.student.updatedAt).toLocaleString() : "Not updated yet"}
+                </p>
+              </div>
+
+              <div className="mt-5 rounded-[22px] border border-foreground/10 bg-background/45 p-4">
+                <p className="text-sm font-semibold">Recent attendance log</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {data.student.attendanceHistory.slice(-6).reverse().map((entry) => (
+                    <span key={`${data.student.id}-${entry.dateKey}`} className="rounded-full border border-foreground/10 bg-background px-3 py-1 text-xs">
+                      {entry.dateKey} {entry.status}
+                    </span>
+                  ))}
+                  {!data.student.attendanceHistory.length ? (
+                    <span className="text-xs text-foreground/55">Attendance history will appear after teachers start marking days.</span>
+                  ) : null}
+                </div>
               </div>
             </Card>
           </motion.div>
@@ -347,6 +365,59 @@ export default function StudentPortalLive() {
               <p className="mt-3 text-sm leading-6 text-foreground/67">{item.detail}</p>
             </Card>
           ))}
+        </motion.section>
+
+        <motion.section
+          custom={0.38}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-120px" }}
+          variants={reveal}
+          className="mt-8 grid gap-4 lg:grid-cols-[1.05fr_0.95fr]"
+        >
+          <Card className="si-card rounded-[30px] border bg-card/75 p-5 backdrop-blur">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">DAV live board</p>
+                <p className="mt-1 text-xs text-foreground/58">Public school notices pulled from the official website</p>
+              </div>
+              <Bell className="h-4 w-4 text-foreground/55" />
+            </div>
+            <div className="mt-4 space-y-3">
+              {davFeed.notices.slice(0, 4).map((item) => (
+                <div key={item.id} className="rounded-[22px] border border-foreground/10 bg-background/45 p-4">
+                  <p className="font-medium">{item.title}</p>
+                  <p className="mt-2 text-xs text-foreground/55">{item.publishedAt}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card className="si-card rounded-[30px] border bg-card/75 p-5 backdrop-blur">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">Campus birthdays and links</p>
+                <p className="mt-1 text-xs text-foreground/58">A more connected student experience beyond marks alone</p>
+              </div>
+              <Trophy className="h-4 w-4 text-foreground/55" />
+            </div>
+            <div className="mt-4 space-y-3">
+              {davFeed.birthdays.slice(0, 3).map((item) => (
+                <div key={item.id} className="rounded-[22px] border border-foreground/10 bg-background/45 p-4">
+                  <p className="font-medium">{item.name}</p>
+                  <p className="mt-1 text-sm text-foreground/65">{item.classLabel}</p>
+                  <p className="mt-1 text-xs text-foreground/55">{item.date}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 grid gap-3">
+              {davFeed.quickLinks.slice(0, 3).map((item) => (
+                <a key={item.id} href={item.url} target="_blank" rel="noreferrer" className="rounded-[18px] border border-foreground/10 bg-background/45 px-4 py-3 text-sm transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)]">
+                  {item.title}
+                </a>
+              ))}
+            </div>
+          </Card>
         </motion.section>
       </div>
     </div>

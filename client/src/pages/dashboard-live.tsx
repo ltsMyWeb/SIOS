@@ -1,6 +1,6 @@
-﻿import { Link } from "wouter";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
 import {
   ArrowRight,
   Bell,
@@ -24,14 +24,41 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
-const reveal = {
-  hidden: { opacity: 0, y: 26 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.55 },
-  },
-};
+function RevealSection({ children, className = "" }: { children: ReactNode; className?: string }) {
+  const ref = useRef<HTMLElement | null>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -10% 0px" },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <section
+      ref={ref}
+      className={[
+        className,
+        "transition-all duration-500 ease-out motion-reduce:transform-none motion-reduce:opacity-100",
+        visible ? "translate-y-0 opacity-100" : "translate-y-5 opacity-0",
+      ].join(" ")}
+    >
+      {children}
+    </section>
+  );
+}
 
 function LoadingState() {
   return (
@@ -71,49 +98,53 @@ export default function DashboardLive() {
   const reviewStudents = data.students
     .filter((student) => student.attendance < 88 || student.overall < 70 || student.subjectScores.Math < 65)
     .slice(0, 4);
+  const davFeed = data.davFeed;
 
   return (
     <div className="min-h-screen si-gradient">
       <SchoolNav />
       <div className="mx-auto max-w-6xl px-4 pb-24 pt-28 md:px-8 md:pt-32">
-        <motion.header initial="hidden" animate="show" variants={reveal} className="rounded-[34px] border border-white/55 bg-card/75 p-6 shadow-[var(--shadow-2)] backdrop-blur md:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <header className="si-rise rounded-[34px] border border-white/55 bg-card/75 p-6 shadow-[var(--shadow-2)] backdrop-blur-sm md:p-8">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-end">
             <div className="max-w-3xl">
               <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs tracking-[0.16em] uppercase">
                 SIOS School Hub
               </Badge>
-              <h1 className="mt-4 font-serif text-4xl font-semibold tracking-tight md:text-6xl">A school dashboard that feels alive as you move through it</h1>
+              <h1 className="mt-4 font-serif text-4xl font-semibold tracking-tight md:text-6xl">
+                A school dashboard that feels alive as you move through it
+              </h1>
               <p className="mt-4 max-w-2xl text-sm text-foreground/68 md:text-base">
-                Built for DAV Public School, East of Loni Road, Shahdara, Delhi, this space brings staff control, student progress, and school updates into one calm and premium workflow.
+                Built for DAV Public School, East of Loni Road, Shahdara, Delhi, this space brings staff control,
+                student progress, and school updates into one calm and premium workflow.
               </p>
             </div>
-            <div className="grid gap-2 sm:grid-cols-3 lg:w-[440px]">
+            <div className="grid w-full gap-2 sm:grid-cols-2 xl:max-w-[360px] xl:justify-self-end">
               <Button asChild className="h-12 rounded-2xl">
                 <Link href="/teacher-console">
                   <span className="inline-flex items-center gap-2">
-                    Teacher Console
+                    Staff Access
                     <ArrowRight className="h-4 w-4" />
                   </span>
                 </Link>
               </Button>
               <Button asChild variant="secondary" className="h-12 rounded-2xl">
-                <Link href="/principal-console">Principal Console</Link>
+                <Link href="/principal-console">Leadership Access</Link>
               </Button>
-              <Button asChild variant="secondary" className="h-12 rounded-2xl">
+              <Button asChild variant="secondary" className="h-12 rounded-2xl sm:col-span-2">
                 <Link href="/student-portal">Student Portal</Link>
               </Button>
             </div>
           </div>
-        </motion.header>
+        </header>
 
-        <motion.section initial="hidden" whileInView="show" viewport={{ once: true, margin: "-120px" }} variants={reveal} className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <RevealSection className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {[
             { label: "Students tracked", value: data.kpis.totalStudents, note: "Current live school roster", icon: Users },
             { label: "Average attendance", value: `${data.kpis.averageAttendance}%`, note: "Whole-school attendance rate", icon: CheckCircle2 },
             { label: "Average overall", value: `${data.kpis.averageOverall}%`, note: "Academic average across students", icon: TrendingUp },
             { label: "Students to review", value: data.kpis.flaggedStudents, note: "Need attendance or score follow-up", icon: ShieldCheck },
           ].map((item) => (
-            <Card key={item.label} className="si-card rounded-[28px] border bg-card/75 p-5 backdrop-blur transition-transform duration-200 hover:-translate-y-0.5">
+            <Card key={item.label} className="si-card rounded-[28px] border bg-card/75 p-5 backdrop-blur-sm transition-transform duration-200 hover:-translate-y-0.5">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-foreground/64">{item.label}</p>
                 <item.icon className="h-4 w-4 text-foreground/55" />
@@ -122,10 +153,10 @@ export default function DashboardLive() {
               <p className="mt-2 text-xs text-foreground/55">{item.note}</p>
             </Card>
           ))}
-        </motion.section>
+        </RevealSection>
 
-        <motion.section initial="hidden" whileInView="show" viewport={{ once: true, margin: "-120px" }} variants={reveal} className="mt-8 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <Card className="si-card si-noise rounded-[30px] border bg-card/75 p-5 backdrop-blur">
+        <RevealSection className="mt-8 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+          <Card className="si-card rounded-[30px] border bg-card/75 p-5 backdrop-blur-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold">Top class performance</p>
@@ -140,7 +171,10 @@ export default function DashboardLive() {
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <p className="font-medium">{item.name}</p>
-                        <p className="mt-1 text-xs text-foreground/55">{item.students} students • {item.atRisk} review cases • term {item.termDelta >= 0 ? "+" : ""}{item.termDelta}%</p>
+                        <p className="mt-1 text-xs text-foreground/55">
+                          {item.students} students • {item.atRisk} review cases • term {item.termDelta >= 0 ? "+" : ""}
+                          {item.termDelta}%
+                        </p>
                       </div>
                       <Badge variant="secondary" className="rounded-full px-3 py-1">{item.attendance}%</Badge>
                     </div>
@@ -152,21 +186,25 @@ export default function DashboardLive() {
           </Card>
 
           <div className="grid gap-4">
-            <Card className="si-card rounded-[30px] border bg-card/75 p-5 backdrop-blur">
+            <Card className="si-card rounded-[30px] border bg-card/75 p-5 backdrop-blur-sm">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold">Backend status</p>
-                  <p className="mt-1 text-xs text-foreground/58">Secure storage and login state</p>
+                  <p className="text-sm font-semibold">System status</p>
+                  <p className="mt-1 text-xs text-foreground/58">Daily school operations and protected access</p>
                 </div>
                 <Database className="h-4 w-4 text-foreground/55" />
               </div>
               <div className="mt-4 rounded-[22px] border border-foreground/10 bg-background/50 p-4">
-                <p className="font-medium">{data.backend.configured ? "Firebase connected" : "Backend still needs setup"}</p>
-                <p className="mt-2 text-sm text-foreground/65">{data.backend.configured ? "Teacher accounts and student changes are saving to the live backend." : data.backend.detail ?? "Add Firebase credentials in .env to enable live storage."}</p>
+                <p className="font-medium">{data.backend.configured ? "School system is protected and online" : "School system setup is still finishing"}</p>
+                <p className="mt-2 text-sm text-foreground/65">
+                  {data.backend.configured
+                    ? "Attendance, staff accounts, and student records are saving safely in the live system."
+                    : "Some protected features may still be unavailable until setup is complete."}
+                </p>
               </div>
             </Card>
 
-            <Card className="si-card rounded-[30px] border bg-card/75 p-5 backdrop-blur">
+            <Card className="si-card rounded-[30px] border bg-card/75 p-5 backdrop-blur-sm">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold">School notes</p>
@@ -184,10 +222,63 @@ export default function DashboardLive() {
               </div>
             </Card>
           </div>
-        </motion.section>
+        </RevealSection>
 
-        <motion.section initial="hidden" whileInView="show" viewport={{ once: true, margin: "-120px" }} variants={reveal} className="mt-8 grid gap-4 lg:grid-cols-[0.92fr_1.08fr]">
-          <Card className="si-card rounded-[30px] border bg-card/75 p-6 backdrop-blur">
+        <RevealSection className="mt-8 grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+          <Card className="si-card rounded-[30px] border bg-card/75 p-6 backdrop-blur-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">Live from DAV campus</p>
+                <p className="mt-1 text-xs text-foreground/58">Public notices and updates pulled from the official school website</p>
+              </div>
+              <CalendarDays className="h-4 w-4 text-foreground/55" />
+            </div>
+            <div className="mt-4 space-y-3">
+              {davFeed.notices.slice(0, 4).map((item) => (
+                <div key={item.id} className="rounded-[22px] border border-foreground/10 bg-background/50 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-medium">{item.title}</p>
+                    <span className="text-xs text-foreground/55">{item.publishedAt}</span>
+                  </div>
+                  {item.url ? (
+                    <a href={item.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-sm text-primary underline-offset-4 hover:underline">
+                      Open notice
+                    </a>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card className="si-card rounded-[30px] border bg-card/75 p-6 backdrop-blur-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">Birthdays and quick access</p>
+                <p className="mt-1 text-xs text-foreground/58">A lighter public-school layer that most admin sites do not show well</p>
+              </div>
+              <Sparkles className="h-4 w-4 text-foreground/55" />
+            </div>
+            <div className="mt-4 space-y-3">
+              {davFeed.birthdays.slice(0, 3).map((item) => (
+                <div key={item.id} className="rounded-[22px] border border-foreground/10 bg-background/50 p-4">
+                  <p className="font-medium">{item.name}</p>
+                  <p className="mt-1 text-sm text-foreground/65">{item.classLabel}</p>
+                  <p className="mt-1 text-xs text-foreground/55">{item.date}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 grid gap-3">
+              {davFeed.quickLinks.slice(0, 3).map((item) => (
+                <a key={item.id} href={item.url} target="_blank" rel="noreferrer" className="rounded-[18px] border border-foreground/10 bg-background/50 px-4 py-3 text-sm transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)]">
+                  {item.title}
+                </a>
+              ))}
+            </div>
+          </Card>
+        </RevealSection>
+
+        <RevealSection className="mt-8 grid gap-4 lg:grid-cols-[0.92fr_1.08fr]">
+          <Card className="si-card rounded-[30px] border bg-card/75 p-6 backdrop-blur-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold">Why the school stands out</p>
@@ -209,7 +300,7 @@ export default function DashboardLive() {
             </div>
           </Card>
 
-          <Card className="si-card rounded-[30px] border bg-card/75 p-6 backdrop-blur">
+          <Card className="si-card rounded-[30px] border bg-card/75 p-6 backdrop-blur-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold">Students to review</p>
@@ -231,10 +322,10 @@ export default function DashboardLive() {
               )) : <div className="rounded-[22px] border border-foreground/10 bg-background/50 p-4 text-sm text-foreground/65">No urgent student follow-up is showing right now.</div>}
             </div>
           </Card>
-        </motion.section>
+        </RevealSection>
 
-        <motion.section initial="hidden" whileInView="show" viewport={{ once: true, margin: "-120px" }} variants={reveal} className="mt-8 grid gap-4 lg:grid-cols-[1.08fr_0.92fr]">
-          <Card className="si-card rounded-[32px] border bg-card/75 p-6 backdrop-blur">
+        <RevealSection className="mt-8 grid gap-4 lg:grid-cols-[1.08fr_0.92fr]">
+          <Card className="si-card rounded-[32px] border bg-card/75 p-6 backdrop-blur-sm">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs uppercase tracking-[0.16em]">School spotlight</Badge>
@@ -257,7 +348,7 @@ export default function DashboardLive() {
             </div>
           </Card>
 
-          <Card className="si-card rounded-[32px] border bg-card/75 p-6 backdrop-blur">
+          <Card className="si-card rounded-[32px] border bg-card/75 p-6 backdrop-blur-sm">
             <div className="flex items-center gap-3">
               <MapPin className="h-4 w-4 text-foreground/55" />
               <p className="text-sm font-semibold">School address and access</p>
@@ -268,14 +359,14 @@ export default function DashboardLive() {
               <p className="mt-4 text-sm text-foreground/68">Designed to guide teachers, students, and school leadership from one calm and organized dashboard.</p>
             </div>
             <div className="mt-4 grid gap-3">
-              <Button asChild className="h-12 justify-between rounded-[18px]"><Link href="/teacher-console">Teacher Console <ArrowRight className="h-4 w-4" /></Link></Button>
-              <Button asChild variant="secondary" className="h-12 justify-between rounded-[18px]"><Link href="/principal-console">Principal Console <Crown className="h-4 w-4" /></Link></Button>
+              <Button asChild className="h-12 justify-between rounded-[18px]"><Link href="/teacher-console">Staff Access <ArrowRight className="h-4 w-4" /></Link></Button>
+              <Button asChild variant="secondary" className="h-12 justify-between rounded-[18px]"><Link href="/principal-console">Leadership Access <Crown className="h-4 w-4" /></Link></Button>
               <Button asChild variant="secondary" className="h-12 justify-between rounded-[18px]"><Link href="/student-portal">Student Portal <ArrowRight className="h-4 w-4" /></Link></Button>
             </div>
           </Card>
-        </motion.section>
+        </RevealSection>
 
-        <motion.footer initial="hidden" whileInView="show" viewport={{ once: true, margin: "-120px" }} variants={reveal} className="mt-10 rounded-[32px] border border-white/45 bg-card/70 p-6 backdrop-blur">
+        <RevealSection className="mt-10 rounded-[32px] border border-white/45 bg-card/70 p-6 backdrop-blur-sm">
           <div className="grid gap-4 md:grid-cols-[1.1fr_0.9fr] md:items-center">
             <div>
               <p className="text-xs uppercase tracking-[0.24em] text-foreground/45">School-first digital system</p>
@@ -283,9 +374,8 @@ export default function DashboardLive() {
             </div>
             <p className="text-sm leading-6 text-foreground/67">The top navigation stays visible while you scroll, the bottom action area remains for quick access, and the larger page length gives the website a more complete public presence.</p>
           </div>
-        </motion.footer>
+        </RevealSection>
       </div>
     </div>
   );
 }
-

@@ -4,8 +4,8 @@ import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/teacher-console", label: "Teacher", icon: Users },
-  { href: "/principal-console", label: "Principal", icon: Landmark },
+  { href: "/teacher-console", label: "Staff", icon: Users },
+  { href: "/principal-console", label: "Leadership", icon: Landmark },
   { href: "/student-portal", label: "Student", icon: UserRound },
 ];
 
@@ -14,7 +14,7 @@ export default function SchoolNav() {
 
   return (
     <div className="fixed inset-x-0 top-0 z-50 px-4 pt-4 md:px-8">
-      <div className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-white/50 bg-card/75 px-3 py-2 shadow-[var(--shadow-1)] backdrop-blur-xl">
+      <div className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-white/50 bg-card/75 px-3 py-2 shadow-[var(--shadow-1)] backdrop-blur-md">
         <div className="flex items-center gap-3">
           <div className="rounded-full bg-primary/10 p-2 text-primary">
             <GraduationCap className="h-4 w-4" />

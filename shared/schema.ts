@@ -9,6 +9,13 @@ export const studentStatusSchema = z.union([
   z.literal("L"),
 ]);
 
+export const attendanceEntrySchema = z.object({
+  dateKey: z.string(),
+  status: z.union([z.literal("P"), z.literal("A"), z.literal("L")]),
+  markedAt: z.string(),
+  note: z.string().optional(),
+});
+
 export const subjectScoresSchema = z.record(z.string(), z.number().min(0).max(100));
 
 export const classroomSchema = z.object({
@@ -39,6 +46,8 @@ export const studentSchema = z.object({
   last7: z.array(z.number().min(0).max(100)).min(2),
   status: studentStatusSchema,
   note: z.string(),
+  attendanceHistory: z.array(attendanceEntrySchema).default([]),
+  updatedAt: z.string().default(""),
 });
 
 export const classSummarySchema = classroomSchema.extend({
@@ -62,6 +71,43 @@ export const schoolUpdateSchema = z.object({
   publishedAt: z.string(),
 });
 
+export const davNoticeSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  publishedAt: z.string(),
+  url: z.string().url().optional(),
+});
+
+export const davBirthdaySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  date: z.string(),
+  classLabel: z.string(),
+});
+
+export const davQuickLinkSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  url: z.string().url(),
+});
+
+export const davContactSchema = z.object({
+  address: z.string(),
+  phone: z.string().optional(),
+  email: z.string().optional(),
+});
+
+export const davPublicFeedSchema = z.object({
+  schoolName: z.string(),
+  campusLabel: z.string(),
+  sourceUrl: z.string().url(),
+  fetchedAt: z.string(),
+  notices: z.array(davNoticeSchema),
+  birthdays: z.array(davBirthdaySchema),
+  quickLinks: z.array(davQuickLinkSchema),
+  contact: davContactSchema,
+});
+
 export const dashboardKpisSchema = z.object({
   totalStudents: z.number().int().nonnegative(),
   averageAttendance: z.number().min(0).max(100),
@@ -80,6 +126,7 @@ export const dashboardResponseSchema = z.object({
   students: z.array(studentSchema),
   insights: z.array(insightSchema),
   updates: z.array(schoolUpdateSchema),
+  davFeed: davPublicFeedSchema,
   kpis: dashboardKpisSchema,
   backend: backendMetaSchema,
 });
@@ -98,6 +145,18 @@ export const recommendationSchema = z.object({
   tone: z.enum(["info", "warn", "good"]),
 });
 
+export const teacherAnalysisSchema = z.object({
+  studentId: z.string(),
+  studentName: z.string(),
+  classLabel: z.string(),
+  priority: z.enum(["low", "medium", "high"]),
+  summary: z.string(),
+  strengths: z.array(z.string()),
+  focusAreas: z.array(z.string()),
+  actionPlan: z.array(z.string()),
+  targetOverall: z.number().min(0).max(100),
+});
+
 export const studentDetailResponseSchema = z.object({
   student: studentSchema,
   classroom: classSummarySchema,
@@ -108,6 +167,8 @@ export const studentDetailResponseSchema = z.object({
 export const teacherOverviewResponseSchema = z.object({
   students: z.array(studentSchema),
   classes: z.array(classSummarySchema),
+  analyses: z.array(teacherAnalysisSchema),
+  davFeed: davPublicFeedSchema,
   logs: z.array(
     z.object({
       id: z.string(),
@@ -193,6 +254,7 @@ export const schoolCatalogResponseSchema = z.object({
   name: z.string(),
   classes: z.array(schoolClassOptionSchema),
   updates: z.array(schoolUpdateSchema),
+  davFeed: davPublicFeedSchema,
   backend: backendMetaSchema,
 });
 
@@ -201,19 +263,27 @@ export const studentPortalResponseSchema = z.object({
   classroom: classSummarySchema,
   recommendations: z.array(recommendationSchema),
   updates: z.array(schoolUpdateSchema),
+  davFeed: davPublicFeedSchema,
   backend: backendMetaSchema,
 });
 
 export type SchoolRole = z.infer<typeof schoolRoleSchema>;
 export type StudentStatus = z.infer<typeof studentStatusSchema>;
+export type AttendanceEntry = z.infer<typeof attendanceEntrySchema>;
 export type Classroom = z.infer<typeof classroomSchema>;
 export type SchoolClassOption = z.infer<typeof schoolClassOptionSchema>;
 export type ClassSummary = z.infer<typeof classSummarySchema>;
 export type StudentRecord = z.infer<typeof studentSchema>;
 export type Insight = z.infer<typeof insightSchema>;
 export type SchoolUpdate = z.infer<typeof schoolUpdateSchema>;
+export type DavNotice = z.infer<typeof davNoticeSchema>;
+export type DavBirthday = z.infer<typeof davBirthdaySchema>;
+export type DavQuickLink = z.infer<typeof davQuickLinkSchema>;
+export type DavContact = z.infer<typeof davContactSchema>;
+export type DavPublicFeed = z.infer<typeof davPublicFeedSchema>;
 export type DashboardResponse = z.infer<typeof dashboardResponseSchema>;
 export type ClassDetailResponse = z.infer<typeof classDetailResponseSchema>;
+export type TeacherAnalysis = z.infer<typeof teacherAnalysisSchema>;
 export type StudentDetailResponse = z.infer<typeof studentDetailResponseSchema>;
 export type TeacherOverviewResponse = z.infer<typeof teacherOverviewResponseSchema>;
 export type AppSession = z.infer<typeof appSessionSchema>;
