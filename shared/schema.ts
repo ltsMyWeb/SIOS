@@ -248,6 +248,7 @@ export const createStudentSchema = z.object({
 export const updateStudentSchema = z.object({
   status: studentStatusSchema.optional(),
   note: z.string().max(280).optional(),
+  subjectScores: subjectScoresSchema.optional(),
 });
 
 export const schoolCatalogResponseSchema = z.object({
@@ -301,3 +302,4 @@ export type UpdatePrincipalCodeInput = z.infer<typeof updatePrincipalCodeSchema>
 export type BackendMeta = z.infer<typeof backendMetaSchema>;
 export type SchoolCatalogResponse = z.infer<typeof schoolCatalogResponseSchema>;
 export type StudentPortalResponse = z.infer<typeof studentPortalResponseSchema>;
+

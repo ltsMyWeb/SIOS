@@ -13,6 +13,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
+type StudentDraft = {
+  status: string;
+  note: string;
+  subjectScores: Record<string, number>;
+};
+
 const reveal = {
   hidden: { opacity: 0, y: 20 },
   show: {
@@ -26,7 +32,7 @@ export default function TeacherConsoleLive() {
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [drafts, setDrafts] = useState<Record<string, { status: string; note: string }>>({});
+  const [drafts, setDrafts] = useState<Record<string, StudentDraft>>({});
   const [newStudent, setNewStudent] = useState({ name: "", classId: "", section: "", rollNo: "" });
 
   const sessionQuery = useQuery<AppSession>({ queryKey: ["/api/session"] });
@@ -60,8 +66,17 @@ export default function TeacherConsoleLive() {
   });
 
   const updateStudentMutation = useMutation({
-    mutationFn: async ({ id, status, note }: { id: string; status?: string; note?: string }) =>
-      (await apiRequest("PATCH", `/api/students/${id}`, { status, note })).json(),
+    mutationFn: async ({
+      id,
+      status,
+      note,
+      subjectScores,
+    }: {
+      id: string;
+      status?: string;
+      note?: string;
+      subjectScores?: Record<string, number>;
+    }) => (await apiRequest("PATCH", `/api/students/${id}`, { status, note, subjectScores })).json(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/teacher-console/overview"] });
       toast({ title: "Saved", description: "Student record updated." });
@@ -108,6 +123,14 @@ export default function TeacherConsoleLive() {
   const [analysisStudentId, setAnalysisStudentId] = useState("");
   const activeAnalysis = analyses.find((item) => item.studentId === analysisStudentId) ?? analyses[0];
   const activeStudent = students.find((item) => item.id === activeAnalysis?.studentId);
+  const getGrade = (percentage: number) => {
+    if (percentage >= 90) return "A+";
+    if (percentage >= 80) return "A";
+    if (percentage >= 70) return "B";
+    if (percentage >= 60) return "C";
+    if (percentage >= 50) return "D";
+    return "F";
+  };
 
   if (session?.role === "principal") {
     return (
@@ -215,7 +238,7 @@ export default function TeacherConsoleLive() {
               </div>
               <h1 className="mt-4 font-serif text-4xl font-semibold tracking-tight md:text-5xl">Teacher Console</h1>
               <p className="mt-3 max-w-2xl text-sm text-foreground/67 md:text-base">
-                Mark attendance, update notes, and add students only inside your assigned classes.
+                Mark attendance, enter subject marks, and add students only inside your assigned classes.
               </p>
             </div>
             <Button variant="secondary" className="h-12 rounded-2xl" onClick={() => logoutMutation.mutate()}>
@@ -311,7 +334,14 @@ export default function TeacherConsoleLive() {
             <div className="mt-4 space-y-3">
               {students.length ? (
                 students.map((student) => {
-                  const draft = drafts[student.id] ?? { status: student.status, note: student.note };
+                  const draft = drafts[student.id] ?? {
+                    status: student.status,
+                    note: student.note,
+                    subjectScores: { ...student.subjectScores },
+                  };
+                  const draftOverall =
+                    Object.values(draft.subjectScores).reduce((sum, score) => sum + score, 0) /
+                    Math.max(1, Object.values(draft.subjectScores).length);
                   return (
                     <div key={student.id} className="rounded-[24px] border border-foreground/10 bg-background/45 p-4">
                       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -346,6 +376,44 @@ export default function TeacherConsoleLive() {
                           </Button>
                         ))}
                       </div>
+                      <div className="mt-4 rounded-[18px] border border-foreground/10 bg-background/35 p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <p className="text-xs uppercase tracking-[0.18em] text-foreground/45">Marks entry</p>
+                          <div className="flex flex-wrap gap-2 text-xs text-foreground/58">
+                            <span className="rounded-full border border-foreground/10 bg-background px-3 py-1">
+                              Percentage {draftOverall.toFixed(1)}%
+                            </span>
+                            <span className="rounded-full border border-foreground/10 bg-background px-3 py-1">
+                              Grade {getGrade(draftOverall)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                          {Object.entries(draft.subjectScores).map(([subject, score]) => (
+                            <label key={subject} className="rounded-[16px] border border-foreground/10 bg-background/60 p-3">
+                              <span className="text-xs uppercase tracking-[0.14em] text-foreground/45">{subject}</span>
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={String(score)}
+                                onChange={(event) => {
+                                  const numeric = Number(event.target.value);
+                                  const nextScore = Number.isFinite(numeric) ? Math.min(100, Math.max(0, numeric)) : 0;
+                                  setDrafts((current) => ({
+                                    ...current,
+                                    [student.id]: {
+                                      ...draft,
+                                      subjectScores: { ...draft.subjectScores, [subject]: nextScore },
+                                    },
+                                  }));
+                                }}
+                                className="mt-2"
+                              />
+                            </label>
+                          ))}
+                        </div>
+                      </div>
                       <Input
                         value={draft.note}
                         onChange={(event) =>
@@ -373,7 +441,12 @@ export default function TeacherConsoleLive() {
                       <Button
                         className="mt-4 h-11 rounded-2xl"
                         onClick={() =>
-                          updateStudentMutation.mutate({ id: student.id, status: draft.status, note: draft.note })
+                          updateStudentMutation.mutate({
+                            id: student.id,
+                            status: draft.status,
+                            note: draft.note,
+                            subjectScores: draft.subjectScores,
+                          })
                         }
                         disabled={updateStudentMutation.isPending}
                       >
@@ -442,6 +515,7 @@ export default function TeacherConsoleLive() {
                         <div>
                           <p className="text-xs uppercase tracking-[0.18em] text-foreground/45">Current overall</p>
                           <p className="mt-1 font-serif text-3xl font-semibold">{activeStudent?.overall ?? 0}%</p>
+                          <p className="mt-1 text-xs text-foreground/58">Grade {getGrade(activeStudent?.overall ?? 0)}</p>
                         </div>
                         <div>
                           <p className="text-xs uppercase tracking-[0.18em] text-foreground/45">Attendance</p>

@@ -189,6 +189,14 @@ export default function StudentPortalLive() {
 
   const scoreEntries = Object.entries(data.student.subjectScores);
   const davFeed = data.davFeed;
+  const getGrade = (percentage: number) => {
+    if (percentage >= 90) return "A+";
+    if (percentage >= 80) return "A";
+    if (percentage >= 70) return "B";
+    if (percentage >= 60) return "C";
+    if (percentage >= 50) return "D";
+    return "F";
+  };
 
   return (
     <div className="min-h-screen si-gradient">
@@ -243,6 +251,7 @@ export default function StudentPortalLive() {
                 <div className="rounded-[22px] border border-foreground/10 bg-background/45 p-4">
                   <p className="text-xs text-foreground/58">Overall</p>
                   <p className="mt-2 font-serif text-3xl font-semibold">{data.student.overall}%</p>
+                  <p className="mt-2 text-sm text-foreground/65">Grade {getGrade(data.student.overall)}</p>
                   <Progress value={data.student.overall} className="mt-3 h-2" />
                 </div>
               </div>

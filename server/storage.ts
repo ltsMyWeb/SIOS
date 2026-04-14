@@ -89,6 +89,12 @@ function round(value: number) {
   return Math.round(value * 10) / 10;
 }
 
+function averageSubjectScores(subjectScores: Record<string, number>) {
+  const scores = Object.values(subjectScores);
+  if (!scores.length) return 0;
+  return round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
+}
+
 function getTodayDateKey() {
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Kolkata",
@@ -711,6 +717,8 @@ abstract class BaseStorage implements IStorage {
       ...existing,
       ...patch,
       note: patch.note ?? existing.note,
+      subjectScores: patch.subjectScores ?? existing.subjectScores,
+      overall: averageSubjectScores(patch.subjectScores ?? existing.subjectScores),
       status: patch.status ?? withDerivedAttendance(existing).status,
       attendanceHistory: nextAttendanceHistory,
       updatedAt: new Date().toISOString(),
@@ -1056,6 +1064,7 @@ function createStorage() {
 }
 
 export const storage = createStorage();
+
 
 
 
