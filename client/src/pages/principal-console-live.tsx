@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowLeft, Eye, EyeOff, LogOut, ShieldCheck, UserCog } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, LogOut, ShieldCheck, Trash2, UserCog } from "lucide-react";
 import type { AppSession, PrincipalOverviewResponse } from "@shared/schema";
 import SchoolNav from "@/components/school-nav";
 import { Badge } from "@/components/ui/badge";
@@ -122,6 +122,22 @@ export default function PrincipalConsoleLive() {
     onError: (error) =>
       toast({
         title: "Could not update teacher",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      }),
+  });
+
+  const deleteTeacherMutation = useMutation({
+    mutationFn: async (teacherId: string) => {
+      await apiRequest("DELETE", `/api/principal/teachers/${teacherId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/principal/overview"] });
+      toast({ title: "Teacher deleted", description: "The teacher account has been removed." });
+    },
+    onError: (error) =>
+      toast({
+        title: "Could not delete teacher",
         description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       }),
@@ -592,6 +608,18 @@ export default function PrincipalConsoleLive() {
                           disabled={updateTeacherMutation.isPending}
                         >
                           Save teacher changes
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          className="h-11 rounded-2xl"
+                          onClick={() => {
+                            if (!window.confirm(`Delete teacher account for ${teacher.name}?`)) return;
+                            deleteTeacherMutation.mutate(teacher.id);
+                          }}
+                          disabled={deleteTeacherMutation.isPending}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete teacher
                         </Button>
                       </div>
                     </div>

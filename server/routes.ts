@@ -255,6 +255,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  app.delete("/api/principal/teachers/:teacherId", requirePrincipalSession, async (req, res, next) => {
+    try {
+      const teacherId = getSingleParam(req.params.teacherId);
+      if (!teacherId) return res.status(400).json({ message: "Teacher id is required" });
+      const deleted = await storage.deleteTeacher(teacherId);
+      if (!deleted) return res.status(404).json({ message: "Teacher not found" });
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.patch("/api/principal/code", requirePrincipalSession, async (req, res, next) => {
     try {
       const parsed = updatePrincipalCodeSchema.safeParse(req.body);
@@ -289,6 +301,20 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const student = await storage.updateStudent(studentId, parsed.data);
       if (!student) return res.status(404).json({ message: "Student not found" });
       res.json(student);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/students/:studentId", requireTeacherSession, async (req, res, next) => {
+    try {
+      const studentId = getSingleParam(req.params.studentId);
+      if (!studentId) return res.status(400).json({ message: "Student id is required" });
+      const canAccess = await storage.canTeacherAccessStudent(req.session.classIds ?? [], studentId);
+      if (!canAccess) return res.status(403).json({ message: "Teacher cannot modify this student" });
+      const deleted = await storage.deleteStudent(studentId);
+      if (!deleted) return res.status(404).json({ message: "Student not found" });
+      res.status(204).send();
     } catch (error) {
       next(error);
     }

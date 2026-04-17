@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowLeft, Eye, EyeOff, LogOut, Plus, Save, Sparkles, Users } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, LogOut, Plus, Save, Sparkles, Trash2, Users } from "lucide-react";
 import type { AppSession, TeacherOverviewResponse } from "@shared/schema";
 import SchoolNav from "@/components/school-nav";
 import { Badge } from "@/components/ui/badge";
@@ -107,6 +107,22 @@ export default function TeacherConsoleLive() {
     onError: (error) =>
       toast({
         title: "Could not add student",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      }),
+  });
+
+  const deleteStudentMutation = useMutation({
+    mutationFn: async (studentId: string) => {
+      await apiRequest("DELETE", `/api/students/${studentId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teacher-console/overview"] });
+      toast({ title: "Student deleted", description: "The student account has been removed." });
+    },
+    onError: (error) =>
+      toast({
+        title: "Could not delete student",
         description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       }),
@@ -325,7 +341,7 @@ export default function TeacherConsoleLive() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold">Student records</p>
-                <p className="mt-1 text-xs text-foreground/58">Mark students present, absent, or late and save notes.</p>
+                <p className="mt-1 text-xs text-foreground/58">Mark students, enter marks, save notes, or remove records.</p>
               </div>
               <Badge variant="secondary" className="rounded-full px-3 py-1.5">
                 {students.length} students
@@ -452,6 +468,18 @@ export default function TeacherConsoleLive() {
                       >
                         <Save className="mr-2 h-4 w-4" />
                         Save changes
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        className="mt-3 h-11 rounded-2xl"
+                        onClick={() => {
+                          if (!window.confirm(`Delete student record for ${student.name}?`)) return;
+                          deleteStudentMutation.mutate(student.id);
+                        }}
+                        disabled={deleteStudentMutation.isPending}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete student
                       </Button>
                     </div>
                   );

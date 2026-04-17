@@ -75,9 +75,11 @@ export interface IStorage {
   authenticateStudent(classId: string, rollNo: number, studentName: string): Promise<StudentIdentity | null>;
   createTeacher(input: CreateTeacherInput): Promise<PublicTeacher>;
   updateTeacher(teacherId: string, input: UpdateTeacherInput): Promise<PublicTeacher | null>;
+  deleteTeacher(teacherId: string): Promise<boolean>;
   updatePrincipalCode(input: UpdatePrincipalCodeInput): Promise<{ principalCode: string }>;
   createStudent(input: CreateStudentInput): Promise<StudentRecord>;
   updateStudent(studentId: string, patch: UpdateStudentInput): Promise<StudentRecord | null>;
+  deleteStudent(studentId: string): Promise<boolean>;
   canTeacherAccessClass(classIds: string[], classId: string): Promise<boolean>;
   canTeacherAccessStudent(classIds: string[], studentId: string): Promise<boolean>;
 }
@@ -412,6 +414,8 @@ abstract class BaseStorage implements IStorage {
   protected abstract readCollections(): Promise<StorageCollections>;
   protected abstract writeStudent(student: StudentRecord): Promise<StudentRecord>;
   protected abstract writeTeacher(teacher: TeacherAccount): Promise<TeacherAccount>;
+  protected abstract removeStudent(studentId: string): Promise<void>;
+  protected abstract removeTeacher(teacherId: string): Promise<void>;
 
   async getSchoolCatalog(): Promise<SchoolCatalogResponse> {
     const { classes, students } = await this.readCollections();
@@ -663,6 +667,14 @@ abstract class BaseStorage implements IStorage {
     return sanitizeTeacher(await this.writeTeacher(nextTeacher));
   }
 
+  async deleteTeacher(teacherId: string): Promise<boolean> {
+    const { teachers } = await this.readCollections();
+    const existing = teachers.find((teacher) => teacher.id === teacherId);
+    if (!existing) return false;
+    await this.removeTeacher(teacherId);
+    return true;
+  }
+
   async updatePrincipalCode(input: UpdatePrincipalCodeInput) {
     return { principalCode: setPrincipalCode(input.principalCode) };
   }
@@ -725,6 +737,14 @@ abstract class BaseStorage implements IStorage {
     });
 
     return this.writeStudent(updated);
+  }
+
+  async deleteStudent(studentId: string): Promise<boolean> {
+    const { students } = await this.readCollections();
+    const existing = students.find((item) => item.id === studentId);
+    if (!existing) return false;
+    await this.removeStudent(studentId);
+    return true;
   }
 
   async canTeacherAccessClass(classIds: string[], classId: string) {
@@ -824,10 +844,20 @@ class FirebaseStorage extends BaseStorage {
     return student;
   }
 
+  protected async removeStudent(studentId: string): Promise<void> {
+    await this.ensureSeeded();
+    await this.runFirestore(() => this.db.collection("students").doc(studentId).delete());
+  }
+
   protected async writeTeacher(teacher: TeacherAccount): Promise<TeacherAccount> {
     await this.ensureSeeded();
     await this.runFirestore(() => this.db.collection("teachers").doc(teacher.id).set(teacher));
     return teacher;
+  }
+
+  protected async removeTeacher(teacherId: string): Promise<void> {
+    await this.ensureSeeded();
+    await this.runFirestore(() => this.db.collection("teachers").doc(teacherId).delete());
   }
 
   async getDashboardData(): Promise<DashboardResponse> {
@@ -1036,6 +1066,10 @@ class UnconfiguredFirebaseStorage implements IStorage {
     return this.throwNotConfigured();
   }
 
+  async deleteTeacher(): Promise<boolean> {
+    return this.throwNotConfigured();
+  }
+
   async updatePrincipalCode(): Promise<{ principalCode: string }> {
     return this.throwNotConfigured();
   }
@@ -1045,6 +1079,10 @@ class UnconfiguredFirebaseStorage implements IStorage {
   }
 
   async updateStudent(): Promise<StudentRecord | null> {
+    return this.throwNotConfigured();
+  }
+
+  async deleteStudent(): Promise<boolean> {
     return this.throwNotConfigured();
   }
 
