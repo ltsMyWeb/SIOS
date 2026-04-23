@@ -200,7 +200,7 @@ export const studentAuthSchema = z.object({
   studentName: z.string().min(2).max(80),
 });
 
-export const principalAuthSchema = z.object({ principalCode: z.string().min(1) });
+export const principalAuthSchema = z.object({ password: z.string().min(8).max(80) });
 
 export const teacherAccountSchema = z.object({
   id: z.string(),
@@ -229,7 +229,7 @@ export const updateTeacherSchema = z.object({
   active: z.boolean().optional(),
 });
 
-export const updatePrincipalCodeSchema = z.object({ principalCode: z.string().min(1) });
+export const updatePrincipalPasswordSchema = z.object({ password: z.string().min(8).max(80) });
 
 export const principalOverviewResponseSchema = z.object({
   teachers: z.array(publicTeacherSchema),
@@ -298,7 +298,7 @@ export type PublicTeacher = z.infer<typeof publicTeacherSchema>;
 export type CreateTeacherInput = z.infer<typeof createTeacherSchema>;
 export type UpdateTeacherInput = z.infer<typeof updateTeacherSchema>;
 export type PrincipalOverviewResponse = z.infer<typeof principalOverviewResponseSchema>;
-export type UpdatePrincipalCodeInput = z.infer<typeof updatePrincipalCodeSchema>;
+export type UpdatePrincipalPasswordInput = z.infer<typeof updatePrincipalPasswordSchema>;
 export type BackendMeta = z.infer<typeof backendMetaSchema>;
 export type SchoolCatalogResponse = z.infer<typeof schoolCatalogResponseSchema>;
 export type StudentPortalResponse = z.infer<typeof studentPortalResponseSchema>;

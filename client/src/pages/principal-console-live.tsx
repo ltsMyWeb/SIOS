@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import { loginPrincipal, logoutSession } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 type TeacherDraft = {
@@ -33,10 +34,10 @@ const reveal = {
 };
 
 export default function PrincipalConsoleLive() {
-  const [principalCode, setPrincipalCode] = useState("");
-  const [newPrincipalCode, setNewPrincipalCode] = useState("");
-  const [showPrincipalCode, setShowPrincipalCode] = useState(false);
-  const [showNewPrincipalCode, setShowNewPrincipalCode] = useState(false);
+  const [principalPassword, setPrincipalPassword] = useState("");
+  const [newPrincipalPassword, setNewPrincipalPassword] = useState("");
+  const [showPrincipalPassword, setShowPrincipalPassword] = useState(false);
+  const [showNewPrincipalPassword, setShowNewPrincipalPassword] = useState(false);
   const [showTeacherPassword, setShowTeacherPassword] = useState(false);
   const [teacherForm, setTeacherForm] = useState({
     name: "",
@@ -51,8 +52,7 @@ export default function PrincipalConsoleLive() {
   const principalSession = sessionQuery.data?.role === "principal" ? sessionQuery.data : null;
 
   const principalLoginMutation = useMutation({
-    mutationFn: async (payload: { principalCode: string }) =>
-      (await apiRequest("POST", "/api/principal/login", payload)).json(),
+    mutationFn: async () => loginPrincipal(principalPassword),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/session"] });
       toast({ title: "Principal logged in", description: "You can now manage teacher accounts." });
@@ -60,7 +60,7 @@ export default function PrincipalConsoleLive() {
     onError: (error) =>
       toast({
         title: "Access denied",
-        description: error instanceof Error ? error.message : "Invalid principal code",
+        description: error instanceof Error ? error.message : "Invalid principal password",
         variant: "destructive",
       }),
   });
@@ -72,7 +72,7 @@ export default function PrincipalConsoleLive() {
   const backendConfigured = overviewQuery.data?.backend.configured ?? false;
 
   const logoutMutation = useMutation({
-    mutationFn: async () => (await apiRequest("POST", "/api/logout")).json(),
+    mutationFn: async () => logoutSession(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/session"] });
       queryClient.removeQueries({ queryKey: ["/api/principal/overview"] });
@@ -143,16 +143,16 @@ export default function PrincipalConsoleLive() {
       }),
   });
 
-  const updatePrincipalCodeMutation = useMutation({
+  const updatePrincipalPasswordMutation = useMutation({
     mutationFn: async () =>
-      (await apiRequest("PATCH", "/api/principal/code", { principalCode: newPrincipalCode })).json(),
+      (await apiRequest("PATCH", "/api/principal/password", { password: newPrincipalPassword })).json(),
     onSuccess: () => {
-      setNewPrincipalCode("");
-      toast({ title: "Principal code updated", description: "Use the new code next time you log in." });
+      setNewPrincipalPassword("");
+      toast({ title: "Principal password updated", description: "Use the new password next time you log in." });
     },
     onError: (error) =>
       toast({
-        title: "Could not update principal code",
+        title: "Could not update principal password",
         description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       }),
@@ -265,23 +265,23 @@ export default function PrincipalConsoleLive() {
                 className="w-full space-y-4"
                 onSubmit={(event) => {
                   event.preventDefault();
-                  principalLoginMutation.mutate({ principalCode });
+                  principalLoginMutation.mutate();
                 }}
               >
                 <div className="relative">
                   <Input
-                    type={showPrincipalCode ? "text" : "password"}
-                    placeholder="Principal code"
+                    type={showPrincipalPassword ? "text" : "password"}
+                    placeholder="Principal password"
                     className="h-12 pr-12 text-center"
-                    value={principalCode}
-                    onChange={(event) => setPrincipalCode(event.target.value)}
+                    value={principalPassword}
+                    onChange={(event) => setPrincipalPassword(event.target.value)}
                   />
                   <button
                     type="button"
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/45 hover:text-foreground"
-                    onClick={() => setShowPrincipalCode((current) => !current)}
+                    onClick={() => setShowPrincipalPassword((current) => !current)}
                   >
-                    {showPrincipalCode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPrincipalPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
                 <Button type="submit" className="h-12 w-full rounded-2xl">
@@ -323,8 +323,8 @@ export default function PrincipalConsoleLive() {
               <p className="mt-4 text-xs uppercase tracking-[0.24em] text-foreground/45">Leadership office</p>
               <h1 className="mt-3 font-serif text-4xl font-semibold tracking-tight md:text-5xl">Principal Console</h1>
               <p className="mt-3 max-w-2xl text-sm text-foreground/67 md:text-base">
-                Create teacher accounts, protect staff access, assign class ownership, and keep the school structure
-                clean from one respected leadership space.
+                Create teacher accounts, protect staff access, assign class ownership, and keep school operations
+                organised in one place.
               </p>
             </div>
             <div className="grid gap-2 sm:grid-cols-2 lg:w-[300px]">
@@ -444,32 +444,34 @@ export default function PrincipalConsoleLive() {
             </div>
 
             <div className="mt-6 rounded-[24px] border border-foreground/10 bg-background/45 p-4">
-              <p className="text-sm font-semibold">Rotate principal code</p>
+              <p className="text-sm font-semibold">Change principal password</p>
               <div className="mt-3 grid gap-3">
                 <div className="relative">
                   <Input
-                    type={showNewPrincipalCode ? "text" : "password"}
-                    value={newPrincipalCode}
-                    onChange={(event) => setNewPrincipalCode(event.target.value)}
-                    placeholder="New principal code"
+                    type={showNewPrincipalPassword ? "text" : "password"}
+                    value={newPrincipalPassword}
+                    onChange={(event) => setNewPrincipalPassword(event.target.value)}
+                    placeholder="New principal password"
                     className="pr-12"
                     disabled={!backendConfigured}
                   />
                   <button
                     type="button"
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/45 hover:text-foreground"
-                    onClick={() => setShowNewPrincipalCode((current) => !current)}
+                    onClick={() => setShowNewPrincipalPassword((current) => !current)}
                     disabled={!backendConfigured}
                   >
-                    {showNewPrincipalCode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showNewPrincipalPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
                 <Button
                   className="h-11 rounded-2xl"
-                  onClick={() => updatePrincipalCodeMutation.mutate()}
-                  disabled={updatePrincipalCodeMutation.isPending || !newPrincipalCode.trim() || !backendConfigured}
+                  onClick={() => updatePrincipalPasswordMutation.mutate()}
+                  disabled={
+                    updatePrincipalPasswordMutation.isPending || !newPrincipalPassword.trim() || !backendConfigured
+                  }
                 >
-                  {updatePrincipalCodeMutation.isPending ? "Updating..." : "Update principal code"}
+                  {updatePrincipalPasswordMutation.isPending ? "Updating..." : "Update principal password"}
                 </Button>
               </div>
             </div>
@@ -654,8 +656,8 @@ export default function PrincipalConsoleLive() {
                   detail: "Login IDs, passwords, and active status all stay in one clear leadership panel.",
                 },
                 {
-                  title: "Presentation ready",
-                  detail: "The space is structured to look formal, calm, and trustworthy during a school demo.",
+                  title: "Role protection",
+                  detail: "Teachers stay limited to assigned classes while the principal keeps full control.",
                 },
               ].map((item) => (
                 <div key={item.title} className="rounded-[22px] border border-foreground/10 bg-background/45 p-4">
@@ -666,10 +668,10 @@ export default function PrincipalConsoleLive() {
             </div>
           </Card>
           <Card className="si-card rounded-[30px] border bg-card/80 p-6 backdrop-blur">
-            <p className="text-sm font-semibold">Leadership note</p>
+            <p className="text-sm font-semibold">Access note</p>
             <p className="mt-4 text-sm leading-6 text-foreground/68">
-              This area now feels more ceremonial and respected while still staying easy to use. It keeps the principal
-              separate from day-to-day teacher editing and gives the management side more presence on screen.
+              Principal access stays hardcoded for now and is organised so Firebase Authentication can replace it later
+              without changing the rest of the console flow.
             </p>
           </Card>
         </motion.section>

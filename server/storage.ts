@@ -33,7 +33,7 @@ import {
   type StudentRecord,
   type TeacherAccount,
   type TeacherOverviewResponse,
-  type UpdatePrincipalCodeInput,
+  type UpdatePrincipalPasswordInput,
   type UpdateStudentInput,
   type UpdateTeacherInput,
 } from "@shared/schema";
@@ -41,8 +41,9 @@ import { randomUUID } from "crypto";
 import type { Firestore } from "firebase-admin/firestore";
 import { getDavPublicFeed } from "./dav-site";
 import { describeFirebaseIssue, getFirestoreDb, probeFirestore } from "./firebase";
-import { generateAccessCode, hashPassword, setPrincipalCode, verifyPassword } from "./principal-auth";
+import { generateAccessCode, hashPassword, setPrincipalPassword, verifyPassword } from "./auth-service";
 import { seedClasses, seedStudents } from "./seed-data";
+import { normalizeTeacherLoginId } from "./teacher-auth";
 
 type StorageCollections = {
   classes: Classroom[];
@@ -76,7 +77,7 @@ export interface IStorage {
   createTeacher(input: CreateTeacherInput): Promise<PublicTeacher>;
   updateTeacher(teacherId: string, input: UpdateTeacherInput): Promise<PublicTeacher | null>;
   deleteTeacher(teacherId: string): Promise<boolean>;
-  updatePrincipalCode(input: UpdatePrincipalCodeInput): Promise<{ principalCode: string }>;
+  updatePrincipalPassword(input: UpdatePrincipalPasswordInput): Promise<{ password: string }>;
   createStudent(input: CreateStudentInput): Promise<StudentRecord>;
   updateStudent(studentId: string, patch: UpdateStudentInput): Promise<StudentRecord | null>;
   deleteStudent(studentId: string): Promise<boolean>;
@@ -561,7 +562,8 @@ abstract class BaseStorage implements IStorage {
 
   async authenticateTeacher(loginId: string, password: string): Promise<TeacherIdentity | null> {
     const { teachers } = await this.readCollections();
-    const teacher = teachers.find((item) => item.active && item.loginId.toLowerCase() === loginId.trim().toLowerCase());
+    const normalizedLoginId = normalizeTeacherLoginId(loginId);
+    const teacher = teachers.find((item) => item.active && item.loginId.toLowerCase() === normalizedLoginId);
 
     if (!teacher || !verifyPassword(password, teacher.passwordHash)) return null;
 
@@ -588,7 +590,7 @@ abstract class BaseStorage implements IStorage {
   async createTeacher(input: CreateTeacherInput): Promise<PublicTeacher> {
     const parsed = createTeacherSchema.parse({
       ...input,
-      loginId: input.loginId.trim().toLowerCase(),
+      loginId: normalizeTeacherLoginId(input.loginId),
       classIds: input.classIds.map((item) => item.toLowerCase()),
     });
     const { classes, teachers } = await this.readCollections();
@@ -627,7 +629,7 @@ abstract class BaseStorage implements IStorage {
 
     const parsed: UpdateTeacherInput = {
       ...input,
-      loginId: input.loginId?.trim().toLowerCase(),
+      loginId: input.loginId ? normalizeTeacherLoginId(input.loginId) : undefined,
       classIds: input.classIds?.map((item) => item.toLowerCase()),
     };
 
@@ -675,8 +677,8 @@ abstract class BaseStorage implements IStorage {
     return true;
   }
 
-  async updatePrincipalCode(input: UpdatePrincipalCodeInput) {
-    return { principalCode: setPrincipalCode(input.principalCode) };
+  async updatePrincipalPassword(input: UpdatePrincipalPasswordInput) {
+    return { password: setPrincipalPassword(input.password) };
   }
 
   async createStudent(input: CreateStudentInput): Promise<StudentRecord> {
@@ -1070,7 +1072,7 @@ class UnconfiguredFirebaseStorage implements IStorage {
     return this.throwNotConfigured();
   }
 
-  async updatePrincipalCode(): Promise<{ principalCode: string }> {
+  async updatePrincipalPassword(): Promise<{ password: string }> {
     return this.throwNotConfigured();
   }
 

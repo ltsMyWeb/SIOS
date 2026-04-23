@@ -7,12 +7,12 @@ import {
   principalAuthSchema,
   studentAuthSchema,
   teacherAuthSchema,
-  updatePrincipalCodeSchema,
+  updatePrincipalPasswordSchema,
   updateStudentSchema,
   updateTeacherSchema,
 } from "@shared/schema";
 import { probeFirestore } from "./firebase";
-import { verifyPrincipalCode } from "./principal-auth";
+import { verifyPrincipalPassword } from "./auth-service";
 import { storage } from "./storage";
 
 declare module "express-session" {
@@ -152,8 +152,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.post("/api/principal/login", (req, res, next) => {
     (async () => {
       const parsed = principalAuthSchema.safeParse(req.body);
-      if (!parsed.success) return res.status(400).json({ message: "Invalid principal code payload" });
-      if (!verifyPrincipalCode(parsed.data.principalCode)) return res.status(401).json({ message: "Invalid principal code" });
+      if (!parsed.success) return res.status(400).json({ message: "Invalid principal login payload" });
+      if (!verifyPrincipalPassword(parsed.data.password)) {
+        return res.status(401).json({ message: "Invalid principal password" });
+      }
 
       await regenerateSession(req);
       req.session.authenticatedRole = "principal";
@@ -267,11 +269,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
-  app.patch("/api/principal/code", requirePrincipalSession, async (req, res, next) => {
+  app.patch("/api/principal/password", requirePrincipalSession, async (req, res, next) => {
     try {
-      const parsed = updatePrincipalCodeSchema.safeParse(req.body);
-      if (!parsed.success) return res.status(400).json({ message: "Invalid principal code payload" });
-      res.json(await storage.updatePrincipalCode(parsed.data));
+      const parsed = updatePrincipalPasswordSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid principal password payload" });
+      res.json(await storage.updatePrincipalPassword(parsed.data));
     } catch (error) {
       next(error);
     }
