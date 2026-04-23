@@ -29,7 +29,7 @@ const reveal = {
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.45 },
+    transition: { duration: 0.28 },
   },
 };
 
@@ -225,7 +225,7 @@ export default function PrincipalConsoleLive() {
       <div className="min-h-screen si-gradient">
         <SchoolNav />
         <div className="mx-auto max-w-3xl px-4 py-28">
-          <Card className="si-card rounded-[28px] border bg-card/80 p-8 backdrop-blur">
+          <Card className="si-card si-crisp rounded-[28px] border bg-card/80 p-8 backdrop-blur">
             <p className="font-serif text-3xl font-semibold">Teacher session detected</p>
             <p className="mt-3 text-sm text-foreground/65">
               This page is only for the principal. Return to the teacher console for attendance and student updates.
@@ -249,7 +249,7 @@ export default function PrincipalConsoleLive() {
       <div className="min-h-screen si-gradient">
         <SchoolNav />
         <div className="mx-auto flex min-h-screen max-w-md items-center justify-center px-4 pt-20">
-          <Card className="w-full rounded-[32px] border bg-card/80 p-8 shadow-[var(--shadow-2)] backdrop-blur">
+          <Card className="si-crisp w-full rounded-[32px] border bg-card/80 p-8 shadow-[var(--shadow-1)] backdrop-blur">
             <div className="flex flex-col items-center gap-6">
               <div className="rounded-full border border-emerald-600/20 bg-emerald-600/10 p-4">
                 <ShieldCheck className="h-8 w-8 text-emerald-500" />
@@ -303,7 +303,7 @@ export default function PrincipalConsoleLive() {
           initial="hidden"
           animate="show"
           variants={reveal}
-          className="rounded-[34px] border border-white/55 bg-card/75 p-6 shadow-[var(--shadow-2)] backdrop-blur md:p-8"
+          className="si-crisp rounded-[34px] border border-white/55 bg-card/75 p-6 shadow-[var(--shadow-1)] backdrop-blur md:p-8"
         >
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
@@ -344,9 +344,9 @@ export default function PrincipalConsoleLive() {
           whileInView="show"
           viewport={{ once: true, margin: "-120px" }}
           variants={reveal}
-          className="mt-8 grid gap-4 lg:grid-cols-[0.95fr_1.05fr]"
+          className="si-section mt-8 grid gap-4 lg:grid-cols-[0.95fr_1.05fr]"
         >
-          <Card className="si-card si-noise rounded-[30px] border bg-card/80 p-5 backdrop-blur">
+          <Card className="si-card si-crisp si-noise rounded-[30px] border bg-card/80 p-5 backdrop-blur">
             <div className="flex items-center gap-2">
               <UserCog className="h-4 w-4 text-foreground/55" />
               <p className="text-sm font-semibold">Create teacher account</p>
@@ -477,7 +477,7 @@ export default function PrincipalConsoleLive() {
             </div>
           </Card>
 
-          <Card className="si-card si-noise rounded-[30px] border bg-card/80 p-5 backdrop-blur">
+          <Card className="si-card si-crisp si-noise rounded-[30px] border bg-card/80 p-5 backdrop-blur">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold">Teacher directory</p>
@@ -641,9 +641,9 @@ export default function PrincipalConsoleLive() {
           whileInView="show"
           viewport={{ once: true, margin: "-120px" }}
           variants={reveal}
-          className="mt-8 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]"
+          className="si-section mt-8 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]"
         >
-          <Card className="si-card rounded-[30px] border bg-card/80 p-6 backdrop-blur">
+          <Card className="si-card si-crisp rounded-[30px] border bg-card/80 p-6 backdrop-blur">
             <p className="text-sm font-semibold">Principal standards</p>
             <div className="mt-4 grid gap-3 md:grid-cols-3">
               {[
@@ -667,7 +667,7 @@ export default function PrincipalConsoleLive() {
               ))}
             </div>
           </Card>
-          <Card className="si-card rounded-[30px] border bg-card/80 p-6 backdrop-blur">
+          <Card className="si-card si-crisp rounded-[30px] border bg-card/80 p-6 backdrop-blur">
             <p className="text-sm font-semibold">Access note</p>
             <p className="mt-4 text-sm leading-6 text-foreground/68">
               Principal access stays hardcoded for now and is organised so Firebase Authentication can replace it later

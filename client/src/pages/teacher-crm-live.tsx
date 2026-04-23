@@ -42,7 +42,7 @@ const reveal = {
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.42 },
+    transition: { duration: 0.28 },
   },
 };
 
@@ -356,7 +356,7 @@ export default function TeacherConsoleLive() {
       <div className="min-h-screen si-gradient">
         <SchoolNav />
         <div className="mx-auto flex min-h-screen max-w-md items-center justify-center px-4 pt-20">
-          <Card className="si-panel si-orbit w-full rounded-[36px] p-8 backdrop-blur-xl">
+          <Card className="si-panel si-crisp si-orbit w-full rounded-[36px] p-8 backdrop-blur">
             <div className="text-center">
               <p className="text-xs uppercase tracking-[0.28em] text-foreground/42">Teacher workspace</p>
               <h1 className="mt-4 font-serif text-4xl font-semibold">Academic operations console</h1>
@@ -416,7 +416,7 @@ export default function TeacherConsoleLive() {
           initial="hidden"
           animate="show"
           variants={reveal}
-          className="si-panel si-orbit si-grid rounded-[38px] p-6 backdrop-blur-xl md:p-8"
+          className="si-panel si-crisp si-orbit si-grid rounded-[38px] p-6 backdrop-blur md:p-8"
         >
           <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr] xl:items-end">
             <div>
@@ -461,7 +461,7 @@ export default function TeacherConsoleLive() {
           whileInView="show"
           viewport={{ once: true, margin: "-120px" }}
           variants={reveal}
-          className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+          className="si-section mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4"
         >
           {[
             { label: "Students managed", value: summary.totalStudents, note: "Current visible roster", icon: Users },
@@ -485,10 +485,10 @@ export default function TeacherConsoleLive() {
           whileInView="show"
           viewport={{ once: true, margin: "-120px" }}
           variants={reveal}
-          className="mt-8 grid gap-5 xl:grid-cols-[1.2fr_0.8fr]"
+          className="si-section mt-8 grid gap-5 xl:grid-cols-[1.2fr_0.8fr]"
         >
           <div className="space-y-5">
-            <Card className="si-panel rounded-[32px] p-5 backdrop-blur-xl">
+            <Card className="si-panel si-crisp rounded-[32px] p-5 backdrop-blur">
               <div className="si-divider pb-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -561,7 +561,7 @@ export default function TeacherConsoleLive() {
               </div>
             </Card>
 
-            <Card className="si-panel rounded-[32px] p-5 backdrop-blur-xl">
+            <Card className="si-panel si-crisp rounded-[32px] p-5 backdrop-blur">
               <div className="si-divider pb-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -633,7 +633,7 @@ export default function TeacherConsoleLive() {
                     return (
                       <div
                         key={student.id}
-                        className={`rounded-[28px] border p-5 transition-all ${selected ? "border-primary/30 bg-primary/6 shadow-[0_24px_52px_-36px_hsl(var(--primary)/0.55)]" : "border-foreground/10 bg-background/55"}`}
+                        className={`rounded-[28px] border p-5 transition-[transform,box-shadow,border-color,background-color] duration-150 ${selected ? "border-primary/30 bg-primary/6 shadow-[0_16px_36px_-28px_hsl(var(--primary)/0.35)]" : "border-foreground/10 bg-background/55"}`}
                       >
                         <div className="flex flex-wrap items-start justify-between gap-4">
                           <div>
@@ -785,7 +785,7 @@ export default function TeacherConsoleLive() {
           </div>
 
           <div className="space-y-5">
-            <Card className="si-panel rounded-[32px] p-5 backdrop-blur-xl">
+            <Card className="si-panel si-crisp rounded-[32px] p-5 backdrop-blur">
               <div className="si-divider pb-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -908,7 +908,7 @@ export default function TeacherConsoleLive() {
             </Card>
 
             {activeStudent ? (
-              <Card className="si-panel rounded-[32px] p-5 backdrop-blur-xl">
+              <Card className="si-panel si-crisp rounded-[32px] p-5 backdrop-blur">
                 <div className="si-divider pb-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
@@ -924,7 +924,7 @@ export default function TeacherConsoleLive() {
               </Card>
             ) : null}
 
-            <Card className="si-panel rounded-[32px] p-5 backdrop-blur-xl">
+            <Card className="si-panel si-crisp rounded-[32px] p-5 backdrop-blur">
               <div className="si-divider pb-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -941,7 +941,7 @@ export default function TeacherConsoleLive() {
                     href={item.url ?? davFeed.sourceUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="block rounded-[20px] border border-foreground/10 bg-background/55 p-4 transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)]"
+                    className="block rounded-[20px] border border-foreground/10 bg-background/55 p-4 transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)]"
                   >
                     <p className="font-medium">{item.title}</p>
                     <p className="mt-2 text-xs text-foreground/55">{item.publishedAt}</p>
@@ -955,7 +955,7 @@ export default function TeacherConsoleLive() {
                     href={item.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="rounded-[18px] border border-foreground/10 bg-background/55 px-4 py-3 text-sm transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)]"
+                    className="rounded-[18px] border border-foreground/10 bg-background/55 px-4 py-3 text-sm transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)]"
                   >
                     {item.title}
                   </a>
