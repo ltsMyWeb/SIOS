@@ -86,14 +86,42 @@ function ErrorState({ message }: { message: string }) {
   );
 }
 
-function TrendStrip({ values }: { values: number[] }) {
+function getClassTone(attendance: number, delta: number) {
+  if (attendance >= 93 && delta >= 0) {
+    return {
+      card: "border-emerald-200 bg-[linear-gradient(180deg,rgba(240,253,250,0.95),rgba(255,255,255,0.98))]",
+      badge: "border-emerald-200 bg-emerald-50 text-emerald-800",
+      fill: "from-emerald-400 to-teal-500",
+    };
+  }
+
+  if (attendance < 88 || delta < 0) {
+    return {
+      card: "border-orange-200 bg-[linear-gradient(180deg,rgba(255,247,237,0.95),rgba(255,255,255,0.98))]",
+      badge: "border-orange-200 bg-orange-50 text-orange-800",
+      fill: "from-orange-300 to-amber-500",
+    };
+  }
+
+  return {
+    card: "border-primary/15 bg-[linear-gradient(180deg,rgba(242,250,250,0.95),rgba(255,255,255,0.98))]",
+    badge: "border-primary/15 bg-cyan-50 text-cyan-800",
+    fill: "from-cyan-400 to-indigo-500",
+  };
+}
+
+function TrendStrip({ values, fill }: { values: number[]; fill: string }) {
   return (
-    <div className="flex items-end gap-1.5">
+    <div className="flex items-end gap-2">
       {values.map((value, index) => (
-        <div key={`${index}-${value}`} className="flex-1">
-          <div className="rounded-full bg-background/80 p-1">
-            <div className="si-gradient-bar w-full rounded-full" style={{ height: `${Math.max(8, value / 1.35)}px` }} />
+        <div key={`${index}-${value}`} className="flex flex-1 flex-col items-center gap-2">
+          <div className="flex h-16 w-full items-end rounded-[14px] border border-foreground/8 bg-background/85 p-1.5">
+            <div
+              className={`w-full rounded-[10px] bg-gradient-to-t ${fill}`}
+              style={{ height: `${Math.max(18, value * 0.6)}%` }}
+            />
           </div>
+          <span className="text-[10px] font-semibold text-foreground/45">{index + 1}</span>
         </div>
       ))}
     </div>
@@ -188,7 +216,9 @@ export default function DashboardLive() {
               {topClasses.length ? (
                 topClasses.map((item) => (
                   <Link key={item.id} href={`/class/${item.id}`}>
-                    <div className="rounded-[24px] border border-foreground/10 bg-background/60 p-5 transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)]">
+                    <div
+                      className={`rounded-[24px] border p-5 transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)] ${getClassTone(item.attendance, item.termDelta).card}`}
+                    >
                       <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
                           <p className="text-lg font-semibold">{item.name}</p>
@@ -196,18 +226,18 @@ export default function DashboardLive() {
                             {item.students} students | {item.atRisk} review cases
                           </p>
                         </div>
-                        <span className="rounded-full border border-foreground/10 bg-card px-3 py-1 text-xs font-semibold">
+                        <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${getClassTone(item.attendance, item.termDelta).badge}`}>
                           Attendance {item.attendance}%
                         </span>
                       </div>
                       <div className="mt-4">
-                        <TrendStrip values={item.trend} />
+                        <TrendStrip values={item.trend} fill={getClassTone(item.attendance, item.termDelta).fill} />
                       </div>
                       <div className="mt-3 flex flex-wrap gap-2 text-xs text-foreground/58">
-                        <span className="rounded-full border border-foreground/10 bg-card px-3 py-1">
+                        <span className="rounded-full border border-foreground/10 bg-card/90 px-3 py-1">
                           Term delta {item.termDelta >= 0 ? `+${item.termDelta}` : item.termDelta}%
                         </span>
-                        <span className="rounded-full border border-foreground/10 bg-card px-3 py-1">
+                        <span className="rounded-full border border-foreground/10 bg-card/90 px-3 py-1">
                           Grade {item.grade} section {item.section}
                         </span>
                       </div>
