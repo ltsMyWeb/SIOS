@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
 import { ArrowLeft, Eye, EyeOff, LogOut, ShieldCheck, Trash2, UserCog } from "lucide-react";
 import type { AppSession, PrincipalOverviewResponse } from "@shared/schema";
 import SchoolNav from "@/components/school-nav";
@@ -22,15 +21,6 @@ type TeacherDraft = {
   active: boolean;
   showPassword: boolean;
   classPicker: string;
-};
-
-const reveal = {
-  hidden: { opacity: 0, y: 22 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.28 },
-  },
 };
 
 export default function PrincipalConsoleLive() {
@@ -299,12 +289,7 @@ export default function PrincipalConsoleLive() {
     <div className="min-h-screen si-gradient">
       <SchoolNav />
       <div className="mx-auto max-w-7xl px-4 pb-24 pt-28 md:px-8 md:pt-32">
-        <motion.header
-          initial="hidden"
-          animate="show"
-          variants={reveal}
-          className="si-crisp rounded-[34px] border border-white/55 bg-card/75 p-6 shadow-[var(--shadow-1)] backdrop-blur md:p-8"
-        >
+        <header className="si-crisp si-section si-rise rounded-[34px] border border-white/55 bg-card/75 p-6 shadow-[var(--shadow-1)] backdrop-blur md:p-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <div className="flex flex-wrap items-center gap-2">
@@ -337,15 +322,9 @@ export default function PrincipalConsoleLive() {
               </Button>
             </div>
           </div>
-        </motion.header>
+        </header>
 
-        <motion.section
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-120px" }}
-          variants={reveal}
-          className="si-section mt-8 grid gap-4 lg:grid-cols-[0.95fr_1.05fr]"
-        >
+        <section className="si-section si-rise mt-8 grid gap-4 lg:grid-cols-[0.95fr_1.05fr] [animation-delay:60ms]">
           <Card className="si-card si-crisp si-noise rounded-[30px] border bg-card/80 p-5 backdrop-blur">
             <div className="flex items-center gap-2">
               <UserCog className="h-4 w-4 text-foreground/55" />
@@ -634,15 +613,9 @@ export default function PrincipalConsoleLive() {
               )}
             </div>
           </Card>
-        </motion.section>
+        </section>
 
-        <motion.section
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-120px" }}
-          variants={reveal}
-          className="si-section mt-8 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]"
-        >
+        <section className="si-section si-rise mt-8 grid gap-4 lg:grid-cols-[1.1fr_0.9fr] [animation-delay:120ms]">
           <Card className="si-card si-crisp rounded-[30px] border bg-card/80 p-6 backdrop-blur">
             <p className="text-sm font-semibold">Principal standards</p>
             <div className="mt-4 grid gap-3 md:grid-cols-3">
@@ -674,7 +647,7 @@ export default function PrincipalConsoleLive() {
               without changing the rest of the console flow.
             </p>
           </Card>
-        </motion.section>
+        </section>
       </div>
     </div>
   );

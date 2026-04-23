@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
 import {
   Archive,
   ArrowLeft,
@@ -35,15 +34,6 @@ type StudentDraft = {
   status: string;
   note: string;
   subjectScores: Record<string, number>;
-};
-
-const reveal = {
-  hidden: { opacity: 0, y: 20 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.28 },
-  },
 };
 
 function getGrade(percentage: number) {
@@ -412,12 +402,7 @@ export default function TeacherConsoleLive() {
     <div className="min-h-screen si-gradient">
       <SchoolNav />
       <div className="mx-auto max-w-7xl px-4 pb-24 pt-28 md:px-8 md:pt-32">
-        <motion.header
-          initial="hidden"
-          animate="show"
-          variants={reveal}
-          className="si-panel si-crisp si-orbit si-grid rounded-[38px] p-6 backdrop-blur md:p-8"
-        >
+        <header className="si-panel si-crisp si-orbit si-grid si-section si-rise rounded-[38px] p-6 backdrop-blur md:p-8">
           <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr] xl:items-end">
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -454,15 +439,9 @@ export default function TeacherConsoleLive() {
               </div>
             </div>
           </div>
-        </motion.header>
+        </header>
 
-        <motion.section
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-120px" }}
-          variants={reveal}
-          className="si-section mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4"
-        >
+        <section className="si-section si-rise mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4 [animation-delay:60ms]">
           {[
             { label: "Students managed", value: summary.totalStudents, note: "Current visible roster", icon: Users },
             { label: "Average attendance", value: `${summary.averageAttendance}%`, note: "Across assigned classes", icon: Clock3 },
@@ -478,15 +457,9 @@ export default function TeacherConsoleLive() {
               <p className="mt-2 text-xs text-foreground/55">{item.note}</p>
             </Card>
           ))}
-        </motion.section>
+        </section>
 
-        <motion.section
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-120px" }}
-          variants={reveal}
-          className="si-section mt-8 grid gap-5 xl:grid-cols-[1.2fr_0.8fr]"
-        >
+        <section className="si-section si-rise mt-8 grid gap-5 xl:grid-cols-[1.2fr_0.8fr] [animation-delay:120ms]">
           <div className="space-y-5">
             <Card className="si-panel si-crisp rounded-[32px] p-5 backdrop-blur">
               <div className="si-divider pb-4">
@@ -963,7 +936,7 @@ export default function TeacherConsoleLive() {
               </div>
             </Card>
           </div>
-        </motion.section>
+        </section>
       </div>
     </div>
   );
