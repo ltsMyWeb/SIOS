@@ -49,7 +49,7 @@ function RevealSection({ children, className = "" }: { children: ReactNode; clas
       ref={ref}
       className={[
         className,
-        "transition-all duration-500 ease-out motion-reduce:transform-none motion-reduce:opacity-100",
+        "si-section transition-[transform,opacity] duration-300 ease-out motion-reduce:transform-none motion-reduce:opacity-100",
         visible ? "translate-y-0 opacity-100" : "translate-y-5 opacity-0",
       ].join(" ")}
     >
@@ -63,7 +63,7 @@ function LoadingState() {
     <div className="min-h-screen si-gradient">
       <SchoolNav />
       <div className="mx-auto max-w-7xl px-4 py-28 md:px-8">
-        <Card className="si-panel rounded-[32px] p-8 backdrop-blur-xl">
+        <Card className="si-panel si-crisp rounded-[32px] p-8 backdrop-blur">
           <p className="font-serif text-3xl font-semibold">Loading academic dashboard...</p>
           <p className="mt-2 text-sm text-foreground/65">Pulling attendance, class performance, and school notices.</p>
         </Card>
@@ -77,7 +77,7 @@ function ErrorState({ message }: { message: string }) {
     <div className="min-h-screen si-gradient">
       <SchoolNav />
       <div className="mx-auto max-w-7xl px-4 py-28 md:px-8">
-        <Card className="si-panel rounded-[32px] p-8 backdrop-blur-xl">
+        <Card className="si-panel si-crisp rounded-[32px] p-8 backdrop-blur">
           <p className="font-serif text-3xl font-semibold">Dashboard unavailable</p>
           <p className="mt-2 text-sm text-foreground/65">{message}</p>
         </Card>
@@ -150,7 +150,7 @@ export default function DashboardLive() {
     <div className="min-h-screen si-gradient">
       <SchoolNav />
       <div className="mx-auto max-w-7xl px-4 pb-24 pt-28 md:px-8 md:pt-32">
-        <header className="si-panel si-orbit si-grid rounded-[40px] p-6 backdrop-blur-xl md:p-8">
+        <header className="si-panel si-crisp si-orbit si-grid rounded-[40px] p-6 backdrop-blur md:p-8">
           <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr] xl:items-end">
             <div>
               <Badge variant="secondary" className="rounded-full border px-3 py-1 text-xs uppercase tracking-[0.22em]">
@@ -190,7 +190,7 @@ export default function DashboardLive() {
             { label: "Average overall", value: `${data.kpis.averageOverall}%`, note: "Academic average across records", icon: LineChart },
             { label: "Review queue", value: data.kpis.flaggedStudents, note: "Students below operational target", icon: TriangleAlert },
           ].map((item) => (
-            <Card key={item.label} className="si-kpi si-card-strong rounded-[28px] p-5">
+            <Card key={item.label} className="si-kpi si-card-strong si-crisp rounded-[28px] p-5">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-foreground/64">{item.label}</p>
                 <item.icon className="h-4 w-4 text-foreground/45" />
@@ -202,7 +202,7 @@ export default function DashboardLive() {
         </RevealSection>
 
         <RevealSection className="mt-8 grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
-          <Card className="si-panel rounded-[32px] p-5 backdrop-blur-xl">
+          <Card className="si-panel si-crisp rounded-[32px] p-5 backdrop-blur">
             <div className="si-divider pb-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -217,7 +217,7 @@ export default function DashboardLive() {
                 topClasses.map((item) => (
                   <Link key={item.id} href={`/class/${item.id}`}>
                     <div
-                      className={`rounded-[24px] border p-5 transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)] ${getClassTone(item.attendance, item.termDelta).card}`}
+                      className={`rounded-[24px] border p-5 transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)] ${getClassTone(item.attendance, item.termDelta).card}`}
                     >
                       <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
@@ -253,7 +253,7 @@ export default function DashboardLive() {
           </Card>
 
           <div className="space-y-5">
-            <Card className="si-panel rounded-[32px] p-5 backdrop-blur-xl">
+            <Card className="si-panel si-crisp rounded-[32px] p-5 backdrop-blur">
               <div className="si-divider pb-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -289,7 +289,7 @@ export default function DashboardLive() {
               </div>
             </Card>
 
-            <Card className="si-panel rounded-[32px] p-5 backdrop-blur-xl">
+            <Card className="si-panel si-crisp rounded-[32px] p-5 backdrop-blur">
               <div className="si-divider pb-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -303,7 +303,7 @@ export default function DashboardLive() {
                 {reviewStudents.length ? (
                   reviewStudents.map((student) => (
                     <Link key={student.id} href={`/student/${student.id}`}>
-                      <div className="rounded-[22px] border border-foreground/10 bg-background/60 p-4 transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)]">
+                      <div className="rounded-[22px] border border-foreground/10 bg-background/60 p-4 transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)]">
                         <div className="flex items-start justify-between gap-4">
                           <div>
                             <p className="font-semibold">{student.name}</p>
@@ -330,7 +330,7 @@ export default function DashboardLive() {
         </RevealSection>
 
         <RevealSection className="mt-8 grid gap-5 xl:grid-cols-[0.92fr_1.08fr]">
-          <Card className="si-panel rounded-[32px] p-5 backdrop-blur-xl">
+          <Card className="si-panel si-crisp rounded-[32px] p-5 backdrop-blur">
             <div className="si-divider pb-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -356,7 +356,7 @@ export default function DashboardLive() {
             </div>
           </Card>
 
-          <Card className="si-panel rounded-[32px] p-5 backdrop-blur-xl">
+          <Card className="si-panel si-crisp rounded-[32px] p-5 backdrop-blur">
             <div className="si-divider pb-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -373,7 +373,7 @@ export default function DashboardLive() {
                   href={item.url ?? davFeed.sourceUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-[22px] border border-foreground/10 bg-background/60 p-4 transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)]"
+                  className="rounded-[22px] border border-foreground/10 bg-background/60 p-4 transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)]"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <p className="font-semibold">{item.title}</p>
@@ -388,7 +388,7 @@ export default function DashboardLive() {
                     href={item.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="rounded-[18px] border border-foreground/10 bg-card px-4 py-3 text-sm font-medium transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)]"
+                    className="rounded-[18px] border border-foreground/10 bg-card px-4 py-3 text-sm font-medium transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-1)]"
                   >
                     {item.title}
                   </a>
@@ -399,7 +399,7 @@ export default function DashboardLive() {
         </RevealSection>
 
         <RevealSection className="mt-8 grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
-          <Card className="si-panel rounded-[32px] p-6 backdrop-blur-xl">
+          <Card className="si-panel si-crisp rounded-[32px] p-6 backdrop-blur">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <Badge variant="secondary" className="rounded-full border px-3 py-1 text-xs uppercase tracking-[0.22em]">
@@ -425,7 +425,7 @@ export default function DashboardLive() {
             </div>
           </Card>
 
-          <Card className="si-panel rounded-[32px] p-6 backdrop-blur-xl">
+          <Card className="si-panel si-crisp rounded-[32px] p-6 backdrop-blur">
             <div className="si-divider pb-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
